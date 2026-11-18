@@ -65,6 +65,7 @@ label.btn input{display:none}
     <button class="tab" data-tab="itens" type="button">2 · Itens</button>
     <button class="tab" data-tab="calc" type="button">3 · Cálculo</button>
     <button class="tab" data-tab="guias" type="button">4 · Guias</button>
+    <button class="tab" data-tab="log" type="button">Correções</button>
     <button class="tab" data-tab="hist" type="button">Histórico</button>
     <button class="tab" data-tab="dash" type="button">Dashboard</button>
     <button class="tab" data-tab="io" type="button">Importar / Exportar</button>
@@ -74,6 +75,7 @@ label.btn input{display:none}
   <section class="pane" id="tab-itens"></section>
   <section class="pane" id="tab-calc"></section>
   <section class="pane" id="tab-guias"></section>
+  <section class="pane" id="tab-log"></section>
   <section class="pane" id="tab-hist"></section>
   <section class="pane" id="tab-dash"></section>
   <section class="pane" id="tab-io"></section>
@@ -205,7 +207,7 @@ label.btn input{display:none}
     var hoje = new Date();
     var d = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
     return {
-      numeroDuimp: '', histId: '', dataRegistro: d, observacoes: '',
+      numeroDuimp: '', histId: '', log: [], dataRegistro: d, observacoes: '',
       importador: { cnpj: '', nome: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '', situacao: '' },
       caracterizacao: 'direta', adquirente: { cnpj: '', nome: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '', situacao: '' },
       modal: 'maritimo', recinto: '', urf: '', paisProc: '',
@@ -509,6 +511,111 @@ label.btn input{display:none}
   }
 
 
+
+  /* ---------- registro de correções (trilha de auditoria) ---------- */
+  var LABELS = {
+    numeroDuimp: ['Nº da DUIMP'], dataRegistro: ['Data de registro (fato gerador)'], observacoes: ['Observações'],
+    caracterizacao: ['Caracterização da importação'], modal: ['Modal'], recinto: ['Recinto aduaneiro'], urf: ['URF de despacho'], paisProc: ['País de procedência'],
+    moeda: ['Moeda'], cambio: ['Taxa de câmbio', 'cambio'], incoterm: ['Incoterm'], freteMoeda: ['Frete internacional', 'dec'], seguroMoeda: ['Seguro internacional', 'dec'],
+    criterioRateio: ['Critério de rateio de frete/seguro'], uf: ['UF do local de consumo'], municipioNome: ['Município do local de consumo'], destinoCep: ['CEP do local de consumo'],
+    'aliq.cbs': ['CBS nominal', 'pct'], 'aliq.ibsUf': ['IBS estadual', 'pct'], 'aliq.ibsMun': ['IBS municipal', 'pct'],
+    'anvisa.ativo': ['Anvisa — anuência'], 'anvisa.categoria': ['Anvisa — categoria regulatória'], 'anvisa.finalidade': ['Anvisa — finalidade'], 'anvisa.assuntoPrimario': ['Anvisa — assunto primário'],
+    'anvisa.assuntoSecundario': ['Anvisa — assunto secundário'], 'anvisa.cnpjDetentor': ['Anvisa — CNPJ do detentor'], 'anvisa.cnpjRecinto': ['Anvisa — CNPJ do recinto'],
+    'anvisa.art23p6': ['Anvisa — §6º do art. 23'], 'anvisa.priorizacao': ['Anvisa — priorização'],
+    numero: ['Nº do item'], descricao: ['Descrição'], ncm: ['NCM'], nbs: ['NBS'], qtd: ['Quantidade', 'qty'], unidade: ['Unidade'], pesoLiq: ['Peso líquido (kg)', 'qty'],
+    vMerc: ['Valor da mercadoria', 'dec'], ii: ['II', 'money'], ipi: ['IPI', 'money'], pis: ['PIS-importação', 'money'], cofins: ['COFINS-importação', 'money'], icms: ['ICMS', 'money'],
+    outrasTaxas: ['Outras taxas na base', 'money'], fundamento: ['Fundamento legal'], cst: ['CST'], cClassTrib: ['cClassTrib'], modoBase: ['Modo de base'], baseManual: ['Base de cálculo informada', 'money'],
+    'is.ativo': ['Imposto Seletivo — sujeito'], 'is.cst': ['IS — CST'], 'is.cClassTrib': ['IS — cClassTrib'], 'is.bc': ['IS — base de cálculo', 'money'], 'is.qtd': ['IS — qtd. tributável', 'qty'],
+    'is.unidade': ['IS — unidade'], 'is.valor': ['IS informado', 'money'], 'tribReg.ativo': ['Tributação regular — informada'], 'tribReg.cst': ['Tributação regular — CST'], 'tribReg.cClassTrib': ['Tributação regular — cClassTrib']
+  };
+  var PESSOA = { cnpj: 'CNPJ/CPF', nome: 'Nome', cep: 'CEP', logradouro: 'Logradouro', numero: 'Número', bairro: 'Bairro', cidade: 'Município', uf: 'UF', situacao: 'Situação cadastral' };
+  var IGNORAR = { histId: 1, log: 1, itens: 1, municipio: 1 };
+  function rotuloCampo(path) {
+    if (LABELS[path]) return LABELS[path][0];
+    var m = /^(importador|adquirente)\.(\w+)$/.exec(path);
+    if (m) return (m[1] === 'importador' ? 'Importador' : 'Adquirente') + ' — ' + (PESSOA[m[2]] || m[2]);
+    return path;
+  }
+  function tipoCampo(path) { return LABELS[path] && LABELS[path][1]; }
+  function canon(path, v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? 'sim' : 'não';
+    var t = tipoCampo(path);
+    if (t && String(v).trim() !== '') return String(num(v));
+    return String(v).trim();
+  }
+  function exibir(path, v) {
+    if (v === null || v === undefined || v === '') return '(vazio)';
+    if (typeof v === 'boolean') return v ? 'sim' : 'não';
+    var t = tipoCampo(path), s = t ? fmtCampo(v, t) : String(v);
+    return s.length > 160 ? s.slice(0, 159) + '…' : s;
+  }
+  function achatar(o, pre, out) {
+    Object.keys(o || {}).forEach(function (k) {
+      var p = pre ? pre + '.' + k : k;
+      if (!pre && IGNORAR[k]) return;
+      if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k])) achatar(o[k], p, out); else out[p] = o[k];
+    });
+    return out;
+  }
+  /* Diferenças entre dois estados (DUIMP inteira ou um item), já normalizadas. */
+  function diffAlteracoes(antes, depois, item) {
+    var a = achatar(antes, '', {}), b = achatar(depois, '', {}), saida = [];
+    Object.keys(b).forEach(function (p) {
+      if (canon(p, a[p]) !== canon(p, b[p])) saida.push({ path: p, de: a[p], para: b[p], item: item === undefined ? null : item });
+    });
+    return saida;
+  }
+  var MAX_LOG = 2000;
+  function addLog(d, e) {
+    if (!Array.isArray(d.log)) d.log = [];
+    d.log.push(e); if (d.log.length > MAX_LOG) d.log.splice(0, d.log.length - MAX_LOG);
+  }
+  function registrarAlteracoes(d, lista, opts) {
+    opts = opts || {}; var em = opts.em || new Date().toISOString();
+    lista.forEach(function (x) {
+      var vazio = x.de === null || x.de === undefined || String(x.de).trim() === '';
+      addLog(d, { em: em, tipo: vazio ? 'preenchimento' : 'correção', campo: rotuloCampo(x.path), item: x.item === undefined ? null : x.item,
+                  de: exibir(x.path, x.de), para: exibir(x.path, x.para), por: opts.por || 'usuário' });
+    });
+    return lista.length;
+  }
+  function registrarEvento(d, texto, opts) {
+    opts = opts || {};
+    addLog(d, { em: opts.em || new Date().toISOString(), tipo: opts.tipo || 'evento', campo: texto, item: null, de: '', para: '', por: opts.por || 'sistema' });
+  }
+  function mesclarLog(a, b) {
+    var visto = {}, out = [];
+    (a || []).concat(b || []).forEach(function (e) {
+      var k = [e.em, e.tipo, e.campo, e.item, e.de, e.para].join('|');
+      if (!visto[k]) { visto[k] = 1; out.push(e); }
+    });
+    return out.sort(function (x, y) { return x.em < y.em ? -1 : x.em > y.em ? 1 : 0; });
+  }
+  function fmtDataHora(iso) {
+    var dt = new Date(iso); if (isNaN(dt)) return String(iso || '');
+    return dt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(',', '');
+  }
+  function contarLog(log) {
+    var r = { total: 0, correcoes: 0, preenchimentos: 0, eventos: 0, notas: 0 };
+    (log || []).forEach(function (e) { r.total++; if (e.tipo === 'correção') r.correcoes++; else if (e.tipo === 'preenchimento') r.preenchimentos++; else if (e.tipo === 'nota') r.notas++; else r.eventos++; });
+    return r;
+  }
+  function filtrarLog(log, f) {
+    f = f || {}; var q = semAcento(f.q || '');
+    return (log || []).filter(function (e) {
+      if (f.tipo && e.tipo !== f.tipo) return false;
+      return !q || semAcento([e.campo, e.de, e.para, e.por, e.item === null ? '' : 'item ' + e.item].join(' | ')).indexOf(q) >= 0;
+    });
+  }
+  function logParaCSV(log) {
+    var linhas = ['data_hora;tipo;campo;item;de;para;origem'];
+    (log || []).slice().sort(function (x, y) { return x.em < y.em ? -1 : 1; }).forEach(function (e) {
+      linhas.push([fmtDataHora(e.em), e.tipo, e.campo, e.item === null ? '' : e.item, e.de, e.para, e.por].map(csvEsc).join(';'));
+    });
+    return linhas.join('\r\n');
+  }
+
   /* ---------- histórico de guias, busca e dashboard ---------- */
   var STATUS = ['rascunho', 'calculada', 'emitida', 'enviada'];
   var STATUS_ROTULO = { rascunho: 'Rascunho', calculada: 'Calculada', emitida: 'Guia emitida', enviada: 'Enviada ao Portal Único' };
@@ -546,7 +653,7 @@ label.btn input{display:none}
       dataRegistro: d.dataRegistro || '', numeroDuimp: d.numeroDuimp || '', qtdItens: d.itens.length,
       valorAduaneiro: r2(der.reduce(function (a, x) { return a + x.valorAduaneiro; }, 0)),
       itens: d.itens.map(function (it, i) { return { ncm: onlyDigits(it.ncm), descricao: it.descricao || '', valorAduaneiro: der[i].valorAduaneiro }; }),
-      ncms: ncms, calculado: !!t, cbs: t ? n0(t.vCBS) : 0, ibs: t ? n0(t.vIBS) : 0, is: t ? n0(t.vIS) : 0
+      ncms: ncms, correcoes: contarLog(d.log).correcoes, calculado: !!t, cbs: t ? n0(t.vCBS) : 0, ibs: t ? n0(t.vIBS) : 0, is: t ? n0(t.vIS) : 0
     };
   }
   function novoRegistro(d, resultado, status, extra) {
@@ -605,11 +712,11 @@ label.btn input{display:none}
       if (f.considerar === 'emitidas' && r.status !== 'enviada' && r.status !== 'emitida') return false;
       return true;
     });
-    var k = { qtd: base.length, itens: 0, valorAduaneiro: 0, cbs: 0, ibs: 0, is: 0, calculadas: 0 };
+    var k = { qtd: base.length, correcoes: 0, itens: 0, valorAduaneiro: 0, cbs: 0, ibs: 0, is: 0, calculadas: 0 };
     var meses = {}, uf = {}, ncm = {}, imp = {}, status = {};
     STATUS.forEach(function (s) { status[s] = 0; });
     base.forEach(function (r) {
-      var rs = r.resumo; k.itens += rs.qtdItens; k.valorAduaneiro += rs.valorAduaneiro; k.cbs += rs.cbs; k.ibs += rs.ibs; k.is += rs.is; if (rs.calculado) k.calculadas++;
+      var rs = r.resumo; k.itens += rs.qtdItens; k.correcoes += rs.correcoes || 0; k.valorAduaneiro += rs.valorAduaneiro; k.cbs += rs.cbs; k.ibs += rs.ibs; k.is += rs.is; if (rs.calculado) k.calculadas++;
       var m = String(rs.dataRegistro).slice(0, 7);
       if (/^\d{4}-\d{2}$/.test(m)) { var o = meses[m] || (meses[m] = { mes: m, qtd: 0, valorAduaneiro: 0, cbs: 0, ibs: 0, is: 0 }); o.qtd++; o.valorAduaneiro += rs.valorAduaneiro; o.cbs += rs.cbs; o.ibs += rs.ibs; o.is += rs.is; }
       status[r.status]++;
@@ -663,6 +770,8 @@ label.btn input{display:none}
     num: num, r2: r2, brl: brl, reais: reais, pct: pct, fmtCampo: fmtCampo, onlyDigits: onlyDigits, cnpjValido: cnpjValido, cpfValido: cpfValido, docValido: docValido,
     novoItem: novoItem, novaDuimp: novaDuimp, ratear: ratear, derivados: derivados, montarPayload: montarPayload,
     STATUS: STATUS, STATUS_ROTULO: STATUS_ROTULO, mesRotulo: mesRotulo, semAcento: semAcento, gerarCnpj: gerarCnpj, resultadoDe: resultadoDe, resumoDe: resumoDe,
+    LABELS: LABELS, rotuloCampo: rotuloCampo, diffAlteracoes: diffAlteracoes, registrarAlteracoes: registrarAlteracoes, registrarEvento: registrarEvento, mesclarLog: mesclarLog,
+    fmtDataHora: fmtDataHora, contarLog: contarLog, filtrarLog: filtrarLog, logParaCSV: logParaCSV,
     novoRegistro: novoRegistro, atualizarRegistro: atualizarRegistro, buscarHistorico: buscarHistorico, ordenarHistorico: ordenarHistorico, dashboard: dashboard,
     historicoParaCSV: historicoParaCSV, exportarHistorico: exportarHistorico, importarHistorico: importarHistorico,
     validar: validar, pendencias: pendencias, exemploDuimp: exemploDuimp, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
@@ -705,7 +814,16 @@ label.btn input{display:none}
       [['Parafuso de aço', '73181500', 40000, 'UN', 2000, 11000, 1980], ['Cabo de aço', '73121090', 6000, 'M', 3000, 9000, 1620]]]
   ];
 
-  var PROT_BASE = { enviada: true };
+  // correções de exemplo: [n, hora, path, de, para, item]
+  var CORR = [
+    [1, '10:42:11', 'cambio', 5.0, 5.2, null], [1, '10:44:03', 'ncm', '85171200', '85171300', 1],
+    [2, '09:15:40', 'freteMoeda', 1500, 1800, null],
+    [3, '11:05:27', 'qtd', 2000, 20000, 1], [3, '11:07:50', 'cClassTrib', '000002', '000001', 1],
+    [5, '14:20:09', 'vMerc', 26000, 28000, 2],
+    [6, '16:31:55', 'paisProc', 'Coreia do Sul', 'Japão', null],
+    [8, '08:58:33', 'importador.cep', '30130-010', '30130-000', null],
+    [10, '13:12:00', 'ii', 1800, 1980, 1]
+  ];
 
   function gerar(C) {
     return MOD.map(function (m) {
@@ -736,6 +854,15 @@ label.btn input{display:none}
       var criado = m[7] + 'T10:00:00.000Z';
       var extra = { id: 'ex-' + String(n).padStart(2, '0'), origem: 'exemplo', agora: criado, obs: 'Exemplo fictício.' };
       if (status === 'enviada') { extra.enviadaEm = m[7] + 'T18:00:00.000Z'; extra.protocolo = 'EX-' + m[7].slice(0, 4) + '-' + String(1000 + n * 37); }
+      var dia = m[7], ev = function (hora, t) { C.registrarEvento(d, t, { em: dia + 'T' + hora + '-03:00' }); };
+      ev('09:30:00', 'Guia de exemplo criada (dados fictícios)');
+      CORR.filter(function (x) { return x[0] === n; }).forEach(function (x) {
+        C.registrarAlteracoes(d, [{ path: x[2], de: x[3], para: x[4], item: x[5] }], { em: dia + 'T' + x[1] + '-03:00', por: 'usuário (exemplo)' });
+      });
+      if (resultado) ev('14:00:00', 'Cálculo ilustrativo de CBS/IBS (não obtido na API)');
+      if (status === 'emitida' || status === 'enviada') ev('15:30:00', 'Guia de conferência emitida');
+      if (status === 'enviada') ev('18:00:00', 'Envio registrado (marcação manual), protocolo ' + extra.protocolo);
+      d.log.sort(function (a, b) { return a.em < b.em ? -1 : 1; });
       var reg = C.novoRegistro(d, resultado, status, extra);
       reg.atualizadoEm = status === 'enviada' ? extra.enviadaEm : m[7] + 'T16:00:00.000Z';
       return reg;
@@ -937,7 +1064,7 @@ label.btn input{display:none}
         S.uf = d.uf; S.municipio = d.ibge; S.municipioNome = d.cidade;
         extra = ' UF e município do local de consumo foram sugeridos pelo endereço do importador; confirme.';
       }
-      renderIdent(); atualizarErros(); salvarRascunho();
+      auditar('Consulta de CNPJ (BrasilAPI)'); renderIdent(); atualizarErros(); salvarRascunho();
       var m2 = $('#msg-' + k);
       m2.textContent = 'Dados da Receita Federal via BrasilAPI. Situação cadastral: ' + (d.situacao || 'não informada') + '.' + extra;
       if (d.situacao && !/^ativa$/i.test(d.situacao)) m2.className = 'msg bad';
@@ -955,7 +1082,7 @@ label.btn input{display:none}
       } else {
         var p = S[who]; p.cep = d.cep; p.logradouro = d.logradouro || p.logradouro; p.bairro = d.bairro || p.bairro; p.cidade = d.cidade; p.uf = d.uf;
       }
-      renderIdent(); atualizarErros(); salvarRascunho();
+      auditar('Consulta de CEP (ViaCEP)'); renderIdent(); atualizarErros(); salvarRascunho();
       $('#msg-' + who).textContent = d.cidade + '/' + d.uf + (d.ibge ? ' (IBGE ' + d.ibge + ')' : '') + '.' + aviso;
     }).catch(function (e) { msg.textContent = e.message; });
   }
@@ -1086,6 +1213,7 @@ label.btn input{display:none}
       '<tr><th>Modal / recinto</th><td>' + esc(MODAIS[S.modal] || '') + ' · ' + esc(S.recinto) + '</td><th>Moeda / câmbio</th><td>' + esc(S.moeda) + ' · ' + C.reais(C.num(S.cambio)) + '</td></tr></table>' +
       '<table><thead><tr><th>Item</th><th>NCM</th><th>Descrição</th><th class="r">Valor aduaneiro</th><th class="r">II</th><th>CST/cClassTrib</th><th class="r">Base CBS/IBS</th><th class="r">CBS</th><th class="r">IBS UF</th><th class="r">IBS Mun.</th><th class="r">IS</th></tr></thead><tbody>' + linhas + '</tbody>' +
       '<tfoot><tr><td colspan="3">Totais</td><td class="r">' + C.reais(totAdu) + '</td><td></td><td></td><td class="r">' + (t ? C.reais(t.vBC) : '—') + '</td><td class="r">' + (t ? C.reais(t.vCBS) : '—') + '</td><td class="r">' + (t ? C.reais(t.vIBSUF) : '—') + '</td><td class="r">' + (t ? C.reais(t.vIBSMun) : '—') + '</td><td class="r">' + (t ? C.reais(t.vIS) : '—') + '</td></tr></tfoot></table>' +
+      (function () { var cs = (S.log || []).filter(function (e) { return e.tipo === 'correção'; }); return cs.length ? '<h4>Registro de correções desta DUIMP (' + cs.length + (cs.length > 25 ? '; últimas 25' : '') + ')</h4>' + tabelaLog(cs, 25) : ''; })() +
       (RP ? '' : '<p class="warn">Os valores de CBS/IBS/IS aparecem somente após o cálculo na aba “Cálculo”.</p>') +
       (String(S.dataRegistro) < '2027-01-01' ? '<p class="warn">Fato gerador em 2026: segundo a Receita Federal, os valores de CBS e IBS não devem ser recolhidos; os números são informativos.</p>' : '') +
       '<p class="fine">Cálculo realizado pela API da Calculadora de Tributos da Receita Federal (regime geral). Conferir sempre a versão da base e a fonte oficial antes de uso profissional. ' + esc(S.observacoes) + '</p>';
@@ -1116,7 +1244,8 @@ label.btn input{display:none}
   function imprimir(tipo) {
     var errs = C.validar(S).filter(function (m) { return tipo !== 'anvisa' || /Anvisa/.test(m); });
     if (errs.length && tipo === 'anvisa') { toast(errs[0], 'err'); return; }
-    if (tipo !== 'anvisa' && !errs.length) { salvarNoHistorico('emitida'); }
+    auditar();
+    if (tipo !== 'anvisa' && !errs.length) { evento('Guia de conferência emitida'); salvarNoHistorico('emitida'); }
     var area = $('#printArea');
     area.innerHTML = tipo === 'anvisa' ? guiaAnvisa() : guiaConferencia();
     document.body.classList.add('printing');
@@ -1136,7 +1265,7 @@ label.btn input{display:none}
       '<section class="card"><h3>Rascunho</h3><p class="hint">Esta ferramenta guarda um rascunho automático neste navegador. Dados sensíveis não são enviados a ninguém além da API de cálculo configurada no topo.</p><button class="btn danger" id="btnNova" type="button">Nova DUIMP (limpar tudo)</button></section></div>';
   }
 
-  function renderAll() { renderIdent(); renderItens(); renderCalculo(); renderGuias(); renderIO(); atualizarErros(); }
+  function renderAll() { snap(); renderIdent(); renderItens(); renderCalculo(); renderGuias(); renderIO(); atualizarErros(); }
   function atualizarErros() {
     var e = C.pendencias(S), el = $('#erros'); PEND = e;
     if (!e.length) { el.className = 'erros ok'; el.innerHTML = '<span class="okmsg">Pronto para calcular: sem pendências de preenchimento.</span>'; return; }
@@ -1154,6 +1283,7 @@ label.btn input{display:none}
 
   /* ---------- ações ---------- */
   function calcular() {
+    auditar();
     var pe = C.pendencias(S);
     if (pe.length) {
       toast(pe[0].msg + (pe.length > 1 ? ' (+' + (pe.length - 1) + ')' : ''), 'err'); atualizarErros();
@@ -1166,6 +1296,7 @@ label.btn input{display:none}
       .then(function (r) {
         R = r.body; RP = C.lerResposta(R); RW = r.headers.get('x-warning-dados-simulados');
         SNAP = chave(); renderCalculo(); renderGuias();
+        evento('Cálculo CBS/IBS/IS realizado pela API' + (VERSAO_API && VERSAO_API.versaoAplicacao ? ' (v' + VERSAO_API.versaoAplicacao + ')' : '') + (RW ? ' — dados simulados sinalizados pela API' : ''));
         var rg = salvarNoHistorico('calculada'); toast('Cálculo concluído e guia salva no histórico (' + rotuloStatus(rg.status).toLowerCase() + ').');
       }).catch(function (e) {
         renderCalculo(); $('#calcMsg').textContent = ''; toast(e.message, 'err');
@@ -1181,7 +1312,7 @@ label.btn input{display:none}
     Promise.all([apiFetch(base + '/aliquota-uniao', { data: data }), apiFetch(base + '/aliquota-uf', { codigoUf: uf.codigo, data: data }), apiFetch(base + '/aliquota-municipio', { codigoMunicipio: S.municipio, data: data })])
       .then(function (r) {
         S.aliq.cbs = pick(r[0]); S.aliq.ibsUf = pick(r[1]); S.aliq.ibsMun = pick(r[2]);
-        renderIdent(); salvarRascunho(); $('#aliqMsg').textContent = 'alíquotas aplicadas (confira antes de usar).';
+        auditar('Alíquotas de referência da API'); renderIdent(); salvarRascunho(); $('#aliqMsg').textContent = 'alíquotas aplicadas (confira antes de usar).';
       }).catch(function (e) { msg.textContent = e.message; });
   }
   function verificarNcm(i) {
@@ -1195,7 +1326,14 @@ label.btn input{display:none}
 
   /* ---------- eventos ---------- */
   function onInput(ev) {
+    onInputCore(ev);
     var t = ev.target;
+    if (ev.type === 'change' && t && (t.dataset.b !== undefined || t.dataset.f !== undefined || t.id === 'munInp')) auditar();
+  }
+  function onInputCore(ev) {
+    var t = ev.target;
+    if (t.id && t.id.indexOf('lf-') === 0) { if (t.id === 'lf-q') LF.q = t.value; else LF.tipo = t.value; renderLogLista(); return; }
+    if (t.id === 'logNota') return;
     if (t.id && t.id.indexOf('hf-') === 0) { filtrosHist(t); return; }
     if (t.id && t.id.indexOf('df-') === 0) { if (ev.type === 'change') filtrosDash(t); return; }
     if (t.id === 'envProt' || t.id === 'envData') return;
@@ -1252,14 +1390,16 @@ label.btn input{display:none}
     var t = ev.target.closest('button,[data-act],[data-print]'); if (!t) return;
     if (t.dataset.print) return imprimir(t.dataset.print);
     if (t.dataset.goto !== undefined) return irPara(PEND[parseInt(t.dataset.goto, 10)]);
+    if (t.dataset.act === 'logNotaAdd') { var tx = ($('#logNota').value || '').trim(); if (!tx) { toast('Escreva a anotação.', 'err'); return; } auditar(); evento(tx, 'nota'); salvarRascunho(); renderLog(); return; }
+    if (t.dataset.act === 'logCsv') { download('correcoes-duimp.csv', '\ufeff' + C.logParaCSV(S.log), 'text/csv;charset=utf-8'); return; }
     if (/^h[A-Z]/.test(t.dataset.act || '')) return acaoHist(t.dataset.act, t);
     var i = parseInt(t.dataset.i, 10);
     switch (t.dataset.act || t.id) {
-      case 'btnAddItem': var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); S.itens.push(C.novoItem(max + 1)); openItem = S.itens.length - 1; renderItens(); salvarRascunho(); atualizarErros(); break;
-      case 'dup': var c = JSON.parse(JSON.stringify(S.itens[i])); c.numero = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0) + 1; S.itens.splice(i + 1, 0, c); openItem = i + 1; renderItens(); salvarRascunho(); atualizarErros(); break;
-      case 'del': if (S.itens.length > 1) { S.itens.splice(i, 1); openItem = -1; renderItens(); salvarRascunho(); atualizarErros(); } else toast('A DUIMP precisa de ao menos um item.', 'err'); break;
+      case 'btnAddItem': auditar(); var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); S.itens.push(C.novoItem(max + 1)); evento('Item ' + (max + 1) + ' adicionado'); openItem = S.itens.length - 1; renderItens(); salvarRascunho(); atualizarErros(); break;
+      case 'dup': auditar(); var c = JSON.parse(JSON.stringify(S.itens[i])); c.numero = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0) + 1; S.itens.splice(i + 1, 0, c); evento('Item ' + S.itens[i].numero + ' duplicado como item ' + c.numero); openItem = i + 1; renderItens(); salvarRascunho(); atualizarErros(); break;
+      case 'del': if (S.itens.length > 1) { auditar(); var nRem = S.itens[i].numero, dRem = S.itens[i].descricao; S.itens.splice(i, 1); evento('Item ' + nRem + ' removido' + (dRem ? ' (' + String(dRem).slice(0, 60) + ')' : '')); openItem = -1; renderItens(); salvarRascunho(); atualizarErros(); } else toast('A DUIMP precisa de ao menos um item.', 'err'); break;
       case 'ncm': verificarNcm(i); break;
-      case 'exemplo': S = C.exemploDuimp(); R = RP = RW = PAYLOAD = null; SNAP = ''; openItem = 0; salvarRascunho(); renderAll(); carregarMunicipios(S.uf); carregarTabelas(); toast('Exemplo fictício carregado: confira os campos e clique em Calcular (aba 3).'); break;
+      case 'exemplo': S = C.exemploDuimp(); R = RP = RW = PAYLOAD = null; SNAP = ''; C.registrarEvento(S, 'Exemplo fictício carregado'); openItem = 0; salvarRascunho(); renderAll(); carregarMunicipios(S.uf); carregarTabelas(); toast('Exemplo fictício carregado: confira os campos e clique em Calcular (aba 3).'); break;
       case 'lookCnpj': buscarCnpj(t.dataset.who); break;
       case 'lookCep': buscarCep(t.dataset.who); break;
       case 'btnCalc': calcular(); break;
@@ -1280,20 +1420,60 @@ label.btn input{display:none}
         var rh = C.importarHistorico(JSON.parse(txt), H); H = rh.lista; salvarHist(); renderHist();
         toast(rh.adicionados + ' guia(s) importada(s), ' + rh.atualizados + ' atualizada(s).');
       } else if (t.id === 'imJson') {
-        var r = C.importar(JSON.parse(txt)); S = r.duimp; R = RP = null; salvarRascunho(); renderAll(); montarListas();
+        auditar(); var r = C.importar(JSON.parse(txt)); S = r.duimp; R = RP = null; C.registrarEvento(S, 'DUIMP importada de arquivo JSON'); salvarRascunho(); renderAll(); montarListas();
         toast(r.origem === 'payload-api' ? 'Payload da API importado (frete/seguro ficam embutidos no valor da mercadoria).' : 'DUIMP importada.');
       } else if (t.id === 'imCsv') {
-        var itens = C.csvParaItens(txt);
+        auditar(); var itens = C.csvParaItens(txt);
         if ($('#imSubst').checked) S.itens = itens;
         else { var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); itens.forEach(function (x, k) { x.numero = max + k + 1; S.itens.push(x); }); }
-        salvarRascunho(); renderAll(); toast(itens.length + ' item(ns) importado(s) do CSV.');
+        C.registrarEvento(S, itens.length + ' item(ns) importado(s) do CSV (' + ($('#imSubst').checked ? 'substituindo' : 'acrescentando') + ')'); salvarRascunho(); renderAll(); toast(itens.length + ' item(ns) importado(s) do CSV.');
       }
     }).catch(function (e) { toast(e.message, 'err'); }).then(function () { t.value = ''; });
   }
   function trocarAba(nome) {
     $$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === nome); });
     $$('.pane').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + nome); });
-    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo(); if (nome === 'hist') renderHist(); if (nome === 'dash') renderDash();
+    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo(); if (nome === 'log') renderLog(); if (nome === 'hist') renderHist(); if (nome === 'dash') renderDash();
+  }
+
+
+  /* ---------- registro de correções (trilha de auditoria) ---------- */
+  var LAST = null, LF = { q: '', tipo: '' };
+  function snap() { LAST = JSON.parse(JSON.stringify(S)); }
+  /* Compara o estado atual com o último confirmado e registra o que mudou (data/hora, campo, valor anterior e novo). */
+  function auditar(origem) {
+    if (!LAST) { snap(); return 0; }
+    var lista = C.diffAlteracoes(LAST, S), n = 0;
+    if (LAST.itens && LAST.itens.length === S.itens.length) S.itens.forEach(function (it, i) { lista = lista.concat(C.diffAlteracoes(LAST.itens[i], it, parseInt(it.numero, 10) || i + 1)); });
+    if (lista.length) { n = C.registrarAlteracoes(S, lista, { por: origem || 'usuário' }); salvarDeb(); }
+    snap();
+    if (n && $('#tab-log.on')) renderLog();
+    return n;
+  }
+  function evento(texto, tipo) { C.registrarEvento(S, texto, { tipo: tipo || 'evento' }); snap(); salvarDeb(); if ($('#tab-log.on')) renderLog(); }
+  function tipoPill(t) { return '<span class="pill' + (t === 'correção' ? ' bad' : t === 'preenchimento' ? ' ok' : '') + '">' + esc(t) + '</span>'; }
+  function tabelaLog(log, max) {
+    var l = log.slice().sort(function (x, y) { return x.em < y.em ? 1 : -1; });
+    if (max) l = l.slice(0, max);
+    return '<table><thead><tr><th>Data e hora</th><th>Tipo</th><th>Campo / ocorrência</th><th>Item</th><th>Valor anterior</th><th>Novo valor</th><th>Origem</th></tr></thead><tbody>' +
+      l.map(function (e) { return '<tr><td>' + esc(C.fmtDataHora(e.em)) + '</td><td>' + tipoPill(e.tipo) + '</td><td>' + esc(e.campo) + '</td><td>' + (e.item === null || e.item === undefined ? '' : esc(e.item)) + '</td><td>' + esc(e.de) + '</td><td>' + esc(e.para) + '</td><td>' + esc(e.por) + '</td></tr>'; }).join('') + '</tbody></table>';
+  }
+  function renderLog() {
+    var n = C.contarLog(S.log);
+    $('#tab-log').innerHTML =
+      '<p class="hint">Toda alteração confirmada nos campos (ao sair do campo) fica registrada com data e hora (horário de Brasília), campo, valor anterior e novo valor, mais os eventos do processo (cálculo, guia emitida, envio). O registro acompanha a DUIMP no histórico e na exportação em JSON.</p>' +
+      '<div class="tot"><div><span>Correções</span><b>' + n.correcoes + '</b></div><div><span>Preenchimentos</span><b>' + n.preenchimentos + '</b></div><div><span>Eventos</span><b>' + n.eventos + '</b></div><div><span>Anotações</span><b>' + n.notas + '</b></div></div>' +
+      '<section class="card"><h3>Anotar motivo de uma correção</h3><div class="row"><label class="f w3"><span>Texto livre (ex.: “NCM corrigida conforme fatura comercial nº 123”)</span><input id="logNota" autocomplete="off"></label>' +
+      '<button class="btn primary self" data-act="logNotaAdd" type="button">Registrar anotação</button></div></section>' +
+      '<div class="row"><label class="f w2"><span>Buscar (campo, valor, item…)</span><input id="lf-q" value="' + esc(LF.q) + '" autocomplete="off"></label>' +
+      '<label class="f"><span>Tipo</span><select id="lf-tipo"><option value="">Todos</option>' + selOpts([['correção', 'Correções'], ['preenchimento', 'Preenchimentos'], ['evento', 'Eventos'], ['nota', 'Anotações']], LF.tipo) + '</select></label>' +
+      '<button class="btn sm self" data-act="logCsv" type="button">Exportar registro (CSV)</button></div><div class="tblw" id="logLista"></div>';
+    renderLogLista();
+  }
+  function renderLogLista() {
+    var el = $('#logLista'); if (!el) return;
+    var l = C.filtrarLog(S.log, LF);
+    el.innerHTML = S.log.length ? (l.length ? tabelaLog(l) : '<div class="aviso">Nada encontrado com esses filtros.</div>') : '<div class="aviso">Ainda não há alterações registradas nesta DUIMP.</div>';
   }
 
   /* ---------- histórico de guias ---------- */
@@ -1317,10 +1497,11 @@ label.btn input{display:none}
 
   /* Grava (ou atualiza) a DUIMP aberta no histórico. O cálculo só acompanha o registro se ainda corresponde ao que está na tela. */
   function salvarNoHistorico(status) {
+    auditar();
     var res = calcAtual() ? C.resultadoDe(RP, { versaoApi: (VERSAO_API && VERSAO_API.versaoAplicacao) || '', simulado: RW || '' }) : null;
     if (res && status === 'rascunho') status = 'calculada';
     var i = S.histId ? idxHist(S.histId) : -1, reg;
-    if (i >= 0) { reg = C.atualizarRegistro(H[i], S, res, status); H[i] = reg; }
+    if (i >= 0) { S.log = C.mesclarLog(H[i].duimp.log, S.log); reg = C.atualizarRegistro(H[i], S, res, status); H[i] = reg; }
     else { reg = C.novoRegistro(S, res, status, S.histId ? { id: S.histId } : {}); H.unshift(reg); }
     S.histId = reg.id; salvarRascunho(); salvarHist();
     return reg;
@@ -1372,7 +1553,7 @@ label.btn input{display:none}
       var s = r.resumo; tv += s.valorAduaneiro; tc += s.cbs; ti += s.ibs;
       var st = '<span class="pill' + (r.status === 'enviada' ? ' ok' : '') + '">' + esc(rotuloStatus(r.status)) + '</span>' + (r.origem === 'exemplo' ? ' <span class="pill bad" title="Dados fictícios">exemplo</span>' : '') +
         (r.status === 'enviada' ? '<div class="hint">' + esc(dataBR(r.enviadaEm)) + (r.protocolo ? ' · ' + esc(r.protocolo) : '') + '</div>' : '');
-      var ac = '<button class="lnk" data-act="hAbrir" data-id="' + esc(r.id) + '" type="button">abrir</button><button class="lnk" data-act="hGuia" data-id="' + esc(r.id) + '" type="button">guia</button>' +
+      var ac = '<button class="lnk" data-act="hAbrir" data-id="' + esc(r.id) + '" type="button">abrir</button><button class="lnk" data-act="hGuia" data-id="' + esc(r.id) + '" type="button">guia</button><button class="lnk" data-act="hLog" data-id="' + esc(r.id) + '" type="button">correções' + (s.correcoes ? ' (' + s.correcoes + ')' : '') + '</button>' +
         (r.status === 'enviada' ? '<button class="lnk" data-act="hUndo" data-id="' + esc(r.id) + '" type="button">desfazer envio</button>' : '<button class="lnk" data-act="hEnvio" data-id="' + esc(r.id) + '" type="button">registrar envio</button>') +
         '<button class="lnk danger" data-act="hDel" data-id="' + esc(r.id) + '" type="button">' + (delId === r.id ? 'confirmar exclusão' : 'excluir') + '</button>';
       var tr = '<tr><td>' + esc(dataBR(s.dataRegistro)) + '</td><td>' + esc(s.importadorNome) + '<div class="hint">' + esc(C.fmtCnpj(s.cnpj)) + (s.numeroDuimp ? ' · ' + esc(s.numeroDuimp) : '') + '</div></td>' +
@@ -1478,7 +1659,7 @@ label.btn input{display:none}
     if (DF.incluirExemplos && nEx) h += '<div class="aviso">Os números incluem ' + nEx + ' guia(s) de <b>exemplo</b> (dados fictícios, cálculo ilustrativo). Desmarque “Incluir exemplos” para ver só os seus dados.</div>';
     h += '<div class="tot"><div><span>Guias</span><b>' + k.qtd + '</b><span>' + enviadas + ' enviada(s)</span></div><div><span>Valor aduaneiro</span><b>' + brl(k.valorAduaneiro) + '</b></div>' +
       '<div><span>CBS</span><b>' + brl(k.cbs) + '</b></div><div><span>IBS</span><b>' + brl(k.ibs) + '</b></div>' + (k.is ? '<div><span>Imposto Seletivo</span><b>' + brl(k.is) + '</b></div>' : '') +
-      '<div><span>Ticket médio</span><b>' + brl(k.ticketMedio) + '</b></div><div><span>Itens declarados</span><b>' + k.itens + '</b></div></div>';
+      '<div><span>Ticket médio</span><b>' + brl(k.ticketMedio) + '</b></div><div><span>Itens declarados</span><b>' + k.itens + '</b></div><div><span>Correções registradas</span><b>' + k.correcoes + '</b></div></div>';
     TIPS = {};
     var cats = db.porMes.map(function (m) { return m.mes; }), mt = DF.metrica;
     var fm = { valor: brl, cbs: brl, ibs: brl, qtd: function (v) { return String(v); } }[mt], campo = { valor: 'valorAduaneiro', cbs: 'cbs', ibs: 'ibs', qtd: 'qtd' }[mt];
@@ -1522,16 +1703,21 @@ label.btn input{display:none}
       case 'hLimpar': HF = { q: '', status: '', uf: '', de: '', ate: '', min: '', max: '', ordem: 'recente', ocultarEx: false }; renderHist(); break;
       case 'hAbrir': abrirRegistro(id, 'ident'); break;
       case 'hGuia': abrirRegistro(id, 'guias'); break;
+      case 'hLog': abrirRegistro(id, 'log'); break;
       case 'hEnvio': envioId = id; delId = null; renderHistLista(); var p = $('#envProt'); if (p) p.focus(); break;
       case 'hEnvCancel': envioId = null; renderHistLista(); break;
       case 'hEnvOk':
         i = idxHist(id); if (i < 0) break;
         var data = ($('#envData') || {}).value || C.novaDuimp().dataRegistro;
-        H[i] = Object.assign({}, H[i], { status: 'enviada', protocolo: (($('#envProt') || {}).value || '').trim(), enviadaEm: data + 'T12:00:00.000Z', atualizadoEm: new Date().toISOString() });
+        var prot = (($('#envProt') || {}).value || '').trim(), em = new Date().toISOString(), txt = 'Envio ao Portal Único registrado (marcação manual) em ' + dataBR(data) + (prot ? ', protocolo ' + prot : '');
+        H[i] = Object.assign({}, H[i], { status: 'enviada', protocolo: prot, enviadaEm: data + 'T12:00:00.000Z', atualizadoEm: em });
+        C.registrarEvento(H[i].duimp, txt, { em: em }); if (S.histId === id) C.registrarEvento(S, txt, { em: em });
         envioId = null; salvarHist(); renderHistLista(); toast('Envio registrado.'); break;
       case 'hUndo':
         i = idxHist(id); if (i < 0) break;
-        H[i] = Object.assign({}, H[i], { status: H[i].resultado ? 'emitida' : 'emitida', protocolo: '', enviadaEm: '', atualizadoEm: new Date().toISOString() }); salvarHist(); renderHistLista(); toast('Envio desfeito (situação: guia emitida).'); break;
+        var em2 = new Date().toISOString();
+        H[i] = Object.assign({}, H[i], { status: 'emitida', protocolo: '', enviadaEm: '', atualizadoEm: em2 });
+        C.registrarEvento(H[i].duimp, 'Envio desfeito (situação voltou para guia emitida)', { em: em2 }); if (S.histId === id) C.registrarEvento(S, 'Envio desfeito (situação voltou para guia emitida)', { em: em2 }); salvarHist(); renderHistLista(); toast('Envio desfeito (situação: guia emitida).'); break;
       case 'hDel':
         if (delId !== id) { delId = id; envioId = null; renderHistLista(); break; }
         H = H.filter(function (x) { return x.id !== id; }); delId = null; salvarHist(); renderHistLista(); toast('Guia excluída do histórico.'); break;
