@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DUIMP · Reforma Tributária (CBS, IBS e IS)</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mut:#5b6675;--line:#d9dee6;--pri:#0b4f8a;--pri2:#e8f1fa;--ok:#12703a;--okbg:#e6f4ec;--bad:#a4262c;--badbg:#fbeaea;--warn:#7a5200;--warnbg:#fff5da}
-@media (prefers-color-scheme:dark){:root{--bg:#10151c;--card:#171e28;--ink:#e6ebf2;--mut:#9aa7b8;--line:#2b3646;--pri:#6db3f2;--pri2:#16283b;--ok:#6fd49a;--okbg:#12261b;--bad:#ff8f94;--badbg:#2e1719;--warn:#f0c96a;--warnbg:#2c2410}}
+:root{--s1:#2a78d6;--s2:#eb6834;--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mut:#5b6675;--line:#d9dee6;--pri:#0b4f8a;--pri2:#e8f1fa;--ok:#12703a;--okbg:#e6f4ec;--bad:#a4262c;--badbg:#fbeaea;--warn:#7a5200;--warnbg:#fff5da}
+@media (prefers-color-scheme:dark){:root{--s1:#3987e5;--s2:#d95926;--bg:#10151c;--card:#171e28;--ink:#e6ebf2;--mut:#9aa7b8;--line:#2b3646;--pri:#6db3f2;--pri2:#16283b;--ok:#6fd49a;--okbg:#12261b;--bad:#ff8f94;--badbg:#2e1719;--warn:#f0c96a;--warnbg:#2c2410}}
 *{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
 header.top{background:var(--card);border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
 header.top h1{font-size:16px;margin:0;font-weight:650}header.top h1 small{display:block;font-weight:400;color:var(--mut);font-size:12px}
@@ -44,6 +44,11 @@ details.item>summary{cursor:pointer;display:flex;gap:10px;align-items:center}.it
 .kv th{width:18%;background:#f4f6f9}.fine{font-size:11px;color:#444}.warn{background:#fff5da;border:1px solid #e5cf8a;padding:6px 10px;font-size:12px;color:#5b4300}
 .toast{position:fixed;bottom:18px;left:50%;transform:translate(-50%,20px);background:#222;color:#fff;padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:.2s;max-width:90vw;z-index:20}.toast.show{opacity:1;transform:translate(-50%,0)}.toast.err{background:#a4262c}
 footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-size:12px}
+.ch{width:100%;height:auto;display:block}.ch text{font:11px system-ui,sans-serif;fill:var(--mut)}.ch text.lbl{fill:var(--ink);font-weight:600}.ch .gl{stroke:var(--line);stroke-width:1}
+.ch .b.s1,.sw.s1{fill:var(--s1);background:var(--s1)}.ch .b.s2,.sw.s2{fill:var(--s2);background:var(--s2)}.ch .hit{fill:transparent}.ch.dim .grp:not(.hov){opacity:.5}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}.leg{display:flex;gap:14px;font-size:12px;color:var(--ink);margin:0 0 4px}
+.tip{position:fixed;z-index:30;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none;max-width:320px}.tip[hidden]{display:none}.tip b{display:block;margin-bottom:3px}
+label.btn input{display:none}
 #printArea{display:none}
 @media print{body.printing>*:not(#printArea){display:none!important}body.printing #printArea{display:block}body{background:#fff;color:#111}#printArea table{font-size:11px}@page{margin:14mm}}
 </style>
@@ -60,6 +65,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     <button class="tab" data-tab="itens" type="button">2 · Itens</button>
     <button class="tab" data-tab="calc" type="button">3 · Cálculo</button>
     <button class="tab" data-tab="guias" type="button">4 · Guias</button>
+    <button class="tab" data-tab="hist" type="button">Histórico</button>
+    <button class="tab" data-tab="dash" type="button">Dashboard</button>
     <button class="tab" data-tab="io" type="button">Importar / Exportar</button>
   </nav>
   <div class="hint" id="refStatus">tabelas oficiais não carregadas</div>
@@ -67,11 +74,14 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   <section class="pane" id="tab-itens"></section>
   <section class="pane" id="tab-calc"></section>
   <section class="pane" id="tab-guias"></section>
+  <section class="pane" id="tab-hist"></section>
+  <section class="pane" id="tab-dash"></section>
   <section class="pane" id="tab-io"></section>
 </main>
 <footer>Ferramenta auxiliar. Não registra a DUIMP no Portal Único Siscomex nem emite guia de pagamento. Os campos seguem a estrutura de preenchimento descrita pela Receita Federal e pelo Manual Anvisa, mas não reproduzem o leiaute oficial da Duimp (Ato Técnico Conjunto RFB/Suana/CGIBS nº 11). Confirme valores e regras na fonte oficial antes de uso profissional.</footer>
 <datalist id="dl-cst"></datalist><datalist id="dl-cc"></datalist><datalist id="dl-cst-is"></datalist><datalist id="dl-cc-is"></datalist><datalist id="dl-fund"></datalist><datalist id="dl-mun"></datalist>
 <div id="printArea"></div>
+<div class="tip" id="tip" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
 /* Núcleo da ferramenta DUIMP · Reforma Tributária.
@@ -178,7 +188,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     var hoje = new Date();
     var d = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
     return {
-      numeroDuimp: '', dataRegistro: d, observacoes: '',
+      numeroDuimp: '', histId: '', dataRegistro: d, observacoes: '',
       importador: { cnpj: '', nome: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '', situacao: '' },
       caracterizacao: 'direta', adquirente: { cnpj: '', nome: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '', situacao: '' },
       modal: 'maritimo', recinto: '', urf: '', paisProc: '',
@@ -481,15 +491,242 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     throw new Error('Formato não reconhecido. Use um arquivo exportado por esta ferramenta ou um payload da API de cálculo.');
   }
 
+
+  /* ---------- histórico de guias, busca e dashboard ---------- */
+  var STATUS = ['rascunho', 'calculada', 'emitida', 'enviada'];
+  var STATUS_ROTULO = { rascunho: 'Rascunho', calculada: 'Calculada', emitida: 'Guia emitida', enviada: 'Enviada ao Portal Único' };
+  var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+  function semAcento(x) { return String(x == null ? '' : x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); }
+  function gerarCnpj(base12) {
+    var b = onlyDigits(base12).slice(0, 12);
+    function dv(base) {
+      var pesos = base.length === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2], s2 = 0, i;
+      for (i = 0; i < base.length; i++) s2 += parseInt(base[i], 10) * pesos[i];
+      var r = s2 % 11; return r < 2 ? 0 : 11 - r;
+    }
+    var d1 = dv(b), d2 = dv(b + d1);
+    return fmtCnpj(b + d1 + d2);
+  }
+  function mesRotulo(m) { var p = String(m).split('-'); return MESES[parseInt(p[1], 10) - 1] + '/' + p[0].slice(2); }
+
+  /* Snapshot do cálculo que acompanha o registro do histórico. */
+  function resultadoDe(rp, meta) {
+    if (!rp) return null; meta = meta || {};
+    return {
+      origem: rp.ilustrativo ? 'ilustrativo' : 'api', calculadoEm: meta.calculadoEm || new Date().toISOString(),
+      versaoApi: meta.versaoApi || '', dadosSimulados: meta.simulado || '', nota: rp.nota || '',
+      totais: JSON.parse(JSON.stringify(rp.totais)),
+      linhas: rp.linhas.map(function (l) { return { nObj: l.nObj, cst: l.cst, cClassTrib: l.cClassTrib, vBC: l.vBC, pCBS: l.pCBS, vCBS: l.vCBS, pIBSUF: l.pIBSUF, vIBSUF: l.vIBSUF, pIBSMun: l.pIBSMun, vIBSMun: l.vIBSMun, vIBS: l.vIBS, vIS: l.vIS }; })
+    };
+  }
+  function resumoDe(d, resultado) {
+    var der = derivados(d), t = resultado && resultado.totais, seen = {};
+    var ncms = [];
+    d.itens.forEach(function (it) { var n = onlyDigits(it.ncm); if (n && !seen[n]) { seen[n] = 1; ncms.push(n); } });
+    return {
+      importadorNome: d.importador.nome || '', cnpj: onlyDigits(d.importador.cnpj), uf: d.uf || '', municipio: String(d.municipio || ''), municipioNome: d.municipioNome || '',
+      dataRegistro: d.dataRegistro || '', numeroDuimp: d.numeroDuimp || '', qtdItens: d.itens.length,
+      valorAduaneiro: r2(der.reduce(function (a, x) { return a + x.valorAduaneiro; }, 0)),
+      itens: d.itens.map(function (it, i) { return { ncm: onlyDigits(it.ncm), descricao: it.descricao || '', valorAduaneiro: der[i].valorAduaneiro }; }),
+      ncms: ncms, calculado: !!t, cbs: t ? n0(t.vCBS) : 0, ibs: t ? n0(t.vIBS) : 0, is: t ? n0(t.vIS) : 0
+    };
+  }
+  function novoRegistro(d, resultado, status, extra) {
+    extra = extra || {}; var agora = extra.agora || new Date().toISOString();
+    var copia = JSON.parse(JSON.stringify(d));
+    var id = extra.id || ('h-' + gerarId().slice(0, 12)); copia.histId = id;
+    return { id: id, criadoEm: agora, atualizadoEm: agora, status: status, enviadaEm: extra.enviadaEm || '', protocolo: extra.protocolo || '', obs: extra.obs || '',
+             origem: extra.origem || 'usuario', duimp: copia, resultado: resultado || null, resumo: resumoDe(copia, resultado) };
+  }
+  /* Atualiza o conteúdo; o status nunca regride por um simples salvar. */
+  function atualizarRegistro(reg, d, resultado, status, agora) {
+    var copia = JSON.parse(JSON.stringify(d)); copia.histId = reg.id;
+    var novoStatus = STATUS.indexOf(status) > STATUS.indexOf(reg.status) ? status : reg.status;
+    return Object.assign({}, reg, { atualizadoEm: agora || new Date().toISOString(), status: novoStatus, duimp: copia, resultado: resultado || null, resumo: resumoDe(copia, resultado) });
+  }
+
+  function buscarHistorico(lista, f) {
+    f = f || {};
+    var q = semAcento(f.q || ''), toks = q ? q.split(/\s+/) : [];
+    return lista.filter(function (r) {
+      var rs = r.resumo;
+      if (f.status && r.status !== f.status) return false;
+      if (f.uf && rs.uf !== f.uf) return false;
+      if (f.origem === 'usuario' && r.origem !== 'usuario') return false;
+      if (f.de && rs.dataRegistro < f.de) return false;
+      if (f.ate && rs.dataRegistro > f.ate) return false;
+      if (f.min !== undefined && f.min !== '' && rs.valorAduaneiro < num(f.min)) return false;
+      if (f.max !== undefined && f.max !== '' && rs.valorAduaneiro > num(f.max)) return false;
+      if (toks.length) {
+        var hay = semAcento([rs.importadorNome, rs.numeroDuimp, r.protocolo, r.obs, rs.municipioNome, rs.uf, STATUS_ROTULO[r.status], r.origem === 'exemplo' ? 'exemplo' : '']
+          .concat(rs.itens.map(function (i) { return i.ncm + ' ' + i.descricao; })).join(' | '));
+        var dig = [rs.cnpj, rs.numeroDuimp, r.protocolo, rs.municipio].concat(rs.ncms).map(onlyDigits).join('|');
+        return toks.every(function (t) { var td = onlyDigits(t); return hay.indexOf(t) >= 0 || (td.length >= 3 && dig.indexOf(td) >= 0); });
+      }
+      return true;
+    });
+  }
+  function ordenarHistorico(lista, chave) {
+    var c = lista.slice();
+    var cmp = {
+      recente: function (a, b) { return a.atualizadoEm < b.atualizadoEm ? 1 : -1; },
+      data: function (a, b) { return a.resumo.dataRegistro < b.resumo.dataRegistro ? 1 : a.resumo.dataRegistro > b.resumo.dataRegistro ? -1 : 0; },
+      valor: function (a, b) { return b.resumo.valorAduaneiro - a.resumo.valorAduaneiro; },
+      importador: function (a, b) { return semAcento(a.resumo.importadorNome) < semAcento(b.resumo.importadorNome) ? -1 : 1; }
+    }[chave || 'recente'];
+    return c.sort(cmp);
+  }
+
+  function dashboard(lista, f) {
+    f = f || {};
+    var base = lista.filter(function (r) {
+      if (f.incluirExemplos === false && r.origem === 'exemplo') return false;
+      if (f.de && r.resumo.dataRegistro < f.de) return false;
+      if (f.ate && r.resumo.dataRegistro > f.ate) return false;
+      if (f.considerar === 'enviadas' && r.status !== 'enviada') return false;
+      if (f.considerar === 'emitidas' && r.status !== 'enviada' && r.status !== 'emitida') return false;
+      return true;
+    });
+    var k = { qtd: base.length, itens: 0, valorAduaneiro: 0, cbs: 0, ibs: 0, is: 0, calculadas: 0 };
+    var meses = {}, uf = {}, ncm = {}, imp = {}, status = {};
+    STATUS.forEach(function (s) { status[s] = 0; });
+    base.forEach(function (r) {
+      var rs = r.resumo; k.itens += rs.qtdItens; k.valorAduaneiro += rs.valorAduaneiro; k.cbs += rs.cbs; k.ibs += rs.ibs; k.is += rs.is; if (rs.calculado) k.calculadas++;
+      var m = String(rs.dataRegistro).slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(m)) { var o = meses[m] || (meses[m] = { mes: m, qtd: 0, valorAduaneiro: 0, cbs: 0, ibs: 0, is: 0 }); o.qtd++; o.valorAduaneiro += rs.valorAduaneiro; o.cbs += rs.cbs; o.ibs += rs.ibs; o.is += rs.is; }
+      status[r.status]++;
+      var u = rs.uf || '—'; (uf[u] = uf[u] || { uf: u, qtd: 0, valorAduaneiro: 0 }); uf[u].qtd++; uf[u].valorAduaneiro += rs.valorAduaneiro;
+      rs.itens.forEach(function (it) { var n = it.ncm || '—'; var o2 = ncm[n] || (ncm[n] = { ncm: n, descricao: it.descricao, qtd: 0, valorAduaneiro: 0 }); o2.qtd++; o2.valorAduaneiro += it.valorAduaneiro; if (!o2.descricao) o2.descricao = it.descricao; });
+      var ci = rs.cnpj || rs.importadorNome; var o3 = imp[ci] || (imp[ci] = { cnpj: rs.cnpj, nome: rs.importadorNome, qtd: 0, valorAduaneiro: 0 }); o3.qtd++; o3.valorAduaneiro += rs.valorAduaneiro;
+    });
+    ['valorAduaneiro', 'cbs', 'ibs', 'is'].forEach(function (x) { k[x] = r2(k[x]); });
+    k.ticketMedio = k.qtd ? r2(k.valorAduaneiro / k.qtd) : 0;
+    var chaves = Object.keys(meses).sort(), porMes = [];
+    if (chaves.length) { // preenche meses sem movimento entre o primeiro e o último
+      var a = chaves[0].split('-').map(Number), z = chaves[chaves.length - 1].split('-').map(Number), y = a[0], mm = a[1];
+      while (y < z[0] || (y === z[0] && mm <= z[1])) {
+        var kk = y + '-' + String(mm).padStart(2, '0'), o4 = meses[kk] || { mes: kk, qtd: 0, valorAduaneiro: 0, cbs: 0, ibs: 0, is: 0 };
+        ['valorAduaneiro', 'cbs', 'ibs', 'is'].forEach(function (x) { o4[x] = r2(o4[x]); }); porMes.push(o4);
+        mm++; if (mm > 12) { mm = 1; y++; }
+      }
+    }
+    function top(obj, n) { return Object.keys(obj).map(function (x) { var o5 = obj[x]; o5.valorAduaneiro = r2(o5.valorAduaneiro); return o5; }).sort(function (p, q) { return q.valorAduaneiro - p.valorAduaneiro; }).slice(0, n); }
+    return { kpis: k, porMes: porMes, porStatus: STATUS.map(function (s) { return { status: s, rotulo: STATUS_ROTULO[s], qtd: status[s] }; }),
+             porUf: top(uf, 8), topNcm: top(ncm, 6), topImportadores: top(imp, 5),
+             recentes: base.slice().sort(function (p, q) { return p.atualizadoEm < q.atualizadoEm ? 1 : -1; }).slice(0, 5) };
+  }
+
+  function historicoParaCSV(lista) {
+    var cab = ['id', 'situacao', 'origem', 'dataRegistro', 'numeroDuimp', 'protocolo', 'enviadaEm', 'importador', 'cnpj', 'uf', 'municipio', 'itens', 'valorAduaneiro', 'cbs', 'ibs', 'is', 'calculo'];
+    var linhas = [cab.join(';')];
+    lista.forEach(function (r) {
+      var s2 = r.resumo, calc = r.resultado ? (r.resultado.origem === 'ilustrativo' ? 'ilustrativo' : 'api') : '';
+      linhas.push([r.id, STATUS_ROTULO[r.status], r.origem, s2.dataRegistro, s2.numeroDuimp, r.protocolo, r.enviadaEm, s2.importadorNome, fmtCnpj(s2.cnpj), s2.uf, s2.municipioNome,
+        s2.qtdItens, brl(s2.valorAduaneiro), brl(s2.cbs), brl(s2.ibs), brl(s2.is), calc].map(csvEsc).join(';'));
+    });
+    return linhas.join('\r\n');
+  }
+  function exportarHistorico(lista) { return { formato: 'duimp-rtc-historico', versaoFormato: 1, geradoEm: new Date().toISOString(), registros: JSON.parse(JSON.stringify(lista)) }; }
+  function importarHistorico(obj, atual) {
+    if (!obj || obj.formato !== 'duimp-rtc-historico' || !Array.isArray(obj.registros)) throw new Error('Arquivo de histórico inválido. Use um arquivo exportado por esta ferramenta (formato duimp-rtc-historico).');
+    var mapa = {}, add = 0, upd = 0;
+    atual.forEach(function (r) { mapa[r.id] = r; });
+    obj.registros.forEach(function (r) {
+      if (!r || !r.id || STATUS.indexOf(r.status) < 0 || !r.duimp || !r.duimp.itens) return;
+      var d = importar({ formato: FORMATO, versaoFormato: 1, duimp: r.duimp }).duimp; d.histId = r.id;
+      var reg = Object.assign({ criadoEm: new Date().toISOString(), enviadaEm: '', protocolo: '', obs: '', origem: 'usuario', resultado: null }, r, { duimp: d });
+      reg.atualizadoEm = r.atualizadoEm || reg.criadoEm; reg.resumo = resumoDe(d, reg.resultado);
+      if (!mapa[r.id]) { mapa[r.id] = reg; add++; } else if (reg.atualizadoEm > mapa[r.id].atualizadoEm) { mapa[r.id] = reg; upd++; }
+    });
+    return { lista: Object.keys(mapa).map(function (x) { return mapa[x]; }), adicionados: add, atualizados: upd };
+  }
+
   root.DuimpCore = {
     num: num, r2: r2, brl: brl, onlyDigits: onlyDigits, cnpjValido: cnpjValido, cpfValido: cpfValido, docValido: docValido,
     novoItem: novoItem, novaDuimp: novaDuimp, ratear: ratear, derivados: derivados, montarPayload: montarPayload,
+    STATUS: STATUS, STATUS_ROTULO: STATUS_ROTULO, mesRotulo: mesRotulo, semAcento: semAcento, gerarCnpj: gerarCnpj, resultadoDe: resultadoDe, resumoDe: resumoDe,
+    novoRegistro: novoRegistro, atualizarRegistro: atualizarRegistro, buscarHistorico: buscarHistorico, ordenarHistorico: ordenarHistorico, dashboard: dashboard,
+    historicoParaCSV: historicoParaCSV, exportarHistorico: exportarHistorico, importarHistorico: importarHistorico,
     validar: validar, pendencias: pendencias, exemploDuimp: exemploDuimp, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
     exportar: exportar, importar: importar, exigeAliquotasNominais: exigeAliquotasNominais, anoDe: anoDe, cepLimpo: cepLimpo, fmtCep: fmtCep, fmtCnpj: fmtCnpj,
     normalizarBrasilApiCnpj: normalizarBrasilApiCnpj, normalizarViaCep: normalizarViaCep, CSV_CAMPOS: CSV_CAMPOS
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.DuimpCore;
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
+
+</script>
+<script>
+/* Dez guias de exemplo (dados FICTÍCIOS) para demonstrar histórico, busca e dashboard.
+   Os cálculos de CBS/IBS são ILUSTRATIVOS (alíquotas de teste de 2026: CBS 0,9% e IBS 0,1% na UF),
+   feitos localmente — não passam pela API da Receita. */
+(function (root) {
+  'use strict';
+  var CBS = 0.9, IBS_UF = 0.1, IBS_MUN = 0;
+
+  var MOD = [
+    // n, importador, base CNPJ, uf, município, cidade, cep, data, status, câmbio, moeda, frete, seguro, país, modal, itens[desc,ncm,qtd,un,peso,vMerc,ii]
+    [1, 'Tecnolog Importadora de Eletrônicos Ltda', '112223330001', 'PR', '4106902', 'Curitiba', '80010-000', '2026-02-10', 'enviada', 5.2, 'USD', 900, 90, 'China', 'maritimo',
+      [['Smartphone 128 GB', '85171300', 200, 'UN', 36, 24000, 4320], ['Carregador USB-C 20 W', '85044010', 500, 'UN', 40, 2500, 450]]],
+    [2, 'Agro Peças e Máquinas S.A.', '223334440001', 'PR', '4118204', 'Paranaguá', '83203-000', '2026-02-27', 'enviada', 5.1, 'EUR', 1800, 150, 'Alemanha', 'maritimo',
+      [['Bomba hidráulica para trator', '84133090', 40, 'UN', 520, 31000, 4650]]],
+    [3, 'Farma Distribuidora Hospitalar Ltda', '334445550001', 'SP', '3550308', 'São Paulo', '01310-100', '2026-03-18', 'enviada', 5.3, 'USD', 600, 80, 'Índia', 'aereo',
+      [['Seringa descartável 10 ml', '90183119', 20000, 'UN', 180, 8200, 0], ['Luva cirúrgica de látex', '40151100', 50000, 'UN', 250, 9500, 0]]],
+    [4, 'Café Fino Exportadora e Importadora Ltda', '445556660001', 'SC', '4208203', 'Itajaí', '88301-000', '2026-04-06', 'emitida', 5.0, 'USD', 700, 60, 'Colômbia', 'maritimo',
+      [['Café verde em grão', '09011110', 18000, 'KG', 18000, 52000, 7800]]],
+    [5, 'Moda Global Comércio de Vestuário Ltda', '556667770001', 'RJ', '3304557', 'Rio de Janeiro', '20040-020', '2026-05-12', 'emitida', 5.4, 'USD', 1200, 110, 'Bangladesh', 'maritimo',
+      [['Camiseta de algodão', '61091000', 30000, 'UN', 6000, 36000, 12600], ['Calça jeans', '62034200', 8000, 'UN', 5600, 28000, 9800]]],
+    [6, 'Automotiva Sul Autopeças Ltda', '667778880001', 'RS', '4314902', 'Porto Alegre', '90010-000', '2026-06-23', 'emitida', 5.5, 'USD', 1500, 140, 'Japão', 'maritimo',
+      [['Junta de cabeçote', '84841000', 900, 'UN', 450, 14500, 2610], ['Pneu radial aro 17', '40111000', 600, 'UN', 5400, 63000, 22680]]],
+    [7, 'Norte Eletrônica Industrial Ltda', '778889990001', 'AM', '1302603', 'Manaus', '69005-000', '2026-07-14', 'calculada', 5.2, 'USD', 2000, 200, 'Taiwan', 'aereo',
+      [['Circuito integrado (memória)', '85423231', 12000, 'UN', 60, 96000, 0], ['Placa de circuito impresso', '85340090', 3000, 'UN', 300, 21000, 1890]]],
+    [8, 'Casa & Conforto Móveis Ltda', '889990000001', 'MG', '3106200', 'Belo Horizonte', '30130-000', '2026-08-19', 'calculada', 5.3, 'USD', 1100, 90, 'Vietnã', 'maritimo',
+      [['Móvel de madeira para sala', '94036000', 350, 'UN', 14000, 42000, 8400]]],
+    [9, 'Beleza Nobre Cosméticos Ltda', '990001110001', 'PE', '2611606', 'Recife', '50010-000', '2026-09-30', 'rascunho', 5.4, 'EUR', 500, 45, 'França', 'aereo',
+      [['Perfume 100 ml', '33030010', 1200, 'UN', 360, 27000, 0]]],
+    [10, 'Constru Fix Ferragens e Fixadores Ltda', '001112220001', 'ES', '3205309', 'Vitória', '29010-000', '2026-11-05', 'rascunho', 5.4, 'USD', 800, 70, 'Índia', 'maritimo',
+      [['Parafuso de aço', '73181500', 40000, 'UN', 2000, 11000, 1980], ['Cabo de aço', '73121090', 6000, 'M', 3000, 9000, 1620]]]
+  ];
+
+  var PROT_BASE = { enviada: true };
+
+  function gerar(C) {
+    return MOD.map(function (m) {
+      var n = m[0], d = C.novaDuimp();
+      d.numeroDuimp = 'EX26BR' + String(n).padStart(7, '0');
+      d.dataRegistro = m[7]; d.moeda = m[10]; d.cambio = m[9]; d.freteMoeda = m[11]; d.seguroMoeda = m[12]; d.paisProc = m[13]; d.modal = m[14];
+      d.incoterm = 'CIF'; d.uf = m[3]; d.municipio = m[4]; d.municipioNome = m[5]; d.destinoCep = m[6];
+      d.importador = { cnpj: C.gerarCnpj(m[2]), nome: m[1].toUpperCase() + ' (exemplo fictício)', cep: m[6], logradouro: 'Rua de Exemplo', numero: String(100 + n), bairro: 'Centro', cidade: m[5], uf: m[3], situacao: 'ATIVA' };
+      d.observacoes = 'Guia de EXEMPLO com dados fictícios para demonstração.';
+      d.itens = m[15].map(function (x, i) {
+        var it = C.novoItem(i + 1);
+        it.descricao = x[0]; it.ncm = x[1]; it.qtd = x[2]; it.unidade = x[3]; it.pesoLiq = x[4]; it.vMerc = x[5]; it.ii = x[6];
+        it.cst = '000'; it.cClassTrib = '000001';
+        return it;
+      });
+      var status = m[8], resultado = null;
+      if (status !== 'rascunho') {
+        var der = C.derivados(d), linhas = d.itens.map(function (it, i) {
+          var x = der[i], bc = C.r2(x.valorAduaneiro + (+it.ii || 0));
+          var vCBS = C.r2(bc * CBS / 100), vUF = C.r2(bc * IBS_UF / 100), vMun = C.r2(bc * IBS_MUN / 100);
+          return { nObj: i + 1, cst: '000', cClassTrib: '000001', vBC: bc, pCBS: CBS, vCBS: vCBS, pIBSUF: IBS_UF, vIBSUF: vUF, pIBSMun: IBS_MUN, vIBSMun: vMun, vIBS: C.r2(vUF + vMun), vIS: 0 };
+        });
+        var s = function (k) { return C.r2(linhas.reduce(function (a, l) { return a + l[k]; }, 0)); };
+        resultado = C.resultadoDe({ ilustrativo: true, nota: 'Cálculo ilustrativo (alíquotas de teste de 2026), não obtido na API.',
+          totais: { vBC: s('vBC'), vCBS: s('vCBS'), vIBSUF: s('vIBSUF'), vIBSMun: s('vIBSMun'), vIBS: s('vIBS'), vIS: 0 }, linhas: linhas },
+          { calculadoEm: m[7] + 'T14:00:00-03:00', versaoApi: 'ilustrativo' });
+      }
+      var criado = m[7] + 'T10:00:00.000Z';
+      var extra = { id: 'ex-' + String(n).padStart(2, '0'), origem: 'exemplo', agora: criado, obs: 'Exemplo fictício.' };
+      if (status === 'enviada') { extra.enviadaEm = m[7] + 'T18:00:00.000Z'; extra.protocolo = 'EX-' + m[7].slice(0, 4) + '-' + String(1000 + n * 37); }
+      var reg = C.novoRegistro(d, resultado, status, extra);
+      reg.atualizadoEm = status === 'enviada' ? extra.enviadaEm : m[7] + 'T16:00:00.000Z';
+      return reg;
+    });
+  }
+  var api = { gerar: gerar };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.DuimpExemplos = api;
+})(typeof window !== 'undefined' ? window : this);
 
 </script>
 <script>
@@ -782,6 +1019,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     var ano = C.anoDe(S);
     if (ano === 2026 || String(S.dataRegistro) < '2027-01-01')
       h += '<div class="aviso">Conforme a Receita Federal (página “Reforma Tributária do Consumo” da DUIMP), em 2026 os valores de CBS e IBS informados na DUIMP <b>não devem ser recolhidos</b>: os resultados abaixo são informativos.</div>';
+    if (RP && RP.doHistorico) h += '<div class="aviso">Resultado recuperado do histórico (calculado em ' + esc(new Date(RP.doHistorico).toLocaleString('pt-BR')) + ').' + (RP.nota ? ' ' + esc(RP.nota) : '') + ' Clique em calcular para atualizar pela API.</div>';
     if (!RP) h += '<p class="hint">Preencha identificação e itens e clique em calcular. O cálculo é feito pela API oficial da calculadora (regime geral, LC 214/2025); esta ferramenta não calcula tributos por conta própria.</p>';
     else {
       if (RW) h += '<div class="aviso">A API sinalizou uso de dados simulados (cabeçalho x-warning-dados-simulados = ' + esc(RW) + '). Não utilize em trabalho profissional sem conferir a fonte oficial.</div>';
@@ -799,7 +1037,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
         if (!partes.length) return '';
         return '<details class="mem"><summary>Item ' + esc(l.nObj) + '</summary>' + partes.map(function (k) { return '<p><b>' + k + '</b><br><span class="pre">' + esc(m[k]) + '</span></p>'; }).join('') + '</details>';
       }).join('');
-      h += '<details class="mem"><summary>Resposta bruta da API (JSON)</summary><pre>' + esc(JSON.stringify(R, null, 2)) + '</pre></details>';
+      if (R) h += '<details class="mem"><summary>Resposta bruta da API (JSON)</summary><pre>' + esc(JSON.stringify(R, null, 2)) + '</pre></details>';
     }
     $('#tab-calc').innerHTML = h;
   }
@@ -855,6 +1093,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   function imprimir(tipo) {
     var errs = C.validar(S).filter(function (m) { return tipo !== 'anvisa' || /Anvisa/.test(m); });
     if (errs.length && tipo === 'anvisa') { toast(errs[0], 'err'); return; }
+    if (tipo !== 'anvisa' && !errs.length) { salvarNoHistorico('emitida'); }
     var area = $('#printArea');
     area.innerHTML = tipo === 'anvisa' ? guiaAnvisa() : guiaConferencia();
     document.body.classList.add('printing');
@@ -903,7 +1142,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     apiFetch('/calculadora/regime-geral', null, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(PAYLOAD) })
       .then(function (r) {
         R = r.body; RP = C.lerResposta(R); RW = r.headers.get('x-warning-dados-simulados');
-        renderCalculo(); renderGuias(); toast('Cálculo concluído.');
+        SNAP = chave(); renderCalculo(); renderGuias();
+        var rg = salvarNoHistorico('calculada'); toast('Cálculo concluído e guia salva no histórico (' + rotuloStatus(rg.status).toLowerCase() + ').');
       }).catch(function (e) {
         renderCalculo(); $('#calcMsg').textContent = ''; toast(e.message, 'err');
         $('#tab-calc').insertAdjacentHTML('beforeend', '<div class="aviso err"><b>Erro da API:</b> ' + esc(e.message) + '</div>');
@@ -933,6 +1173,9 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   /* ---------- eventos ---------- */
   function onInput(ev) {
     var t = ev.target;
+    if (t.id && t.id.indexOf('hf-') === 0) { filtrosHist(t); return; }
+    if (t.id && t.id.indexOf('df-') === 0) { if (ev.type === 'change') filtrosDash(t); return; }
+    if (t.id === 'envProt' || t.id === 'envData') return;
     if (t.classList) t.classList.remove('inv');
     if (t.dataset.b) {
       var v = t.type === 'checkbox' ? t.checked : t.value;
@@ -983,13 +1226,14 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     var t = ev.target.closest('button,[data-act],[data-print]'); if (!t) return;
     if (t.dataset.print) return imprimir(t.dataset.print);
     if (t.dataset.goto !== undefined) return irPara(PEND[parseInt(t.dataset.goto, 10)]);
+    if (/^h[A-Z]/.test(t.dataset.act || '')) return acaoHist(t.dataset.act, t);
     var i = parseInt(t.dataset.i, 10);
     switch (t.dataset.act || t.id) {
       case 'btnAddItem': var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); S.itens.push(C.novoItem(max + 1)); openItem = S.itens.length - 1; renderItens(); salvarRascunho(); atualizarErros(); break;
       case 'dup': var c = JSON.parse(JSON.stringify(S.itens[i])); c.numero = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0) + 1; S.itens.splice(i + 1, 0, c); openItem = i + 1; renderItens(); salvarRascunho(); atualizarErros(); break;
       case 'del': if (S.itens.length > 1) { S.itens.splice(i, 1); openItem = -1; renderItens(); salvarRascunho(); atualizarErros(); } else toast('A DUIMP precisa de ao menos um item.', 'err'); break;
       case 'ncm': verificarNcm(i); break;
-      case 'exemplo': S = C.exemploDuimp(); R = RP = RW = PAYLOAD = null; openItem = 0; salvarRascunho(); renderAll(); carregarMunicipios(S.uf); carregarTabelas(); toast('Exemplo fictício carregado: confira os campos e clique em Calcular (aba 3).'); break;
+      case 'exemplo': S = C.exemploDuimp(); R = RP = RW = PAYLOAD = null; SNAP = ''; openItem = 0; salvarRascunho(); renderAll(); carregarMunicipios(S.uf); carregarTabelas(); toast('Exemplo fictício carregado: confira os campos e clique em Calcular (aba 3).'); break;
       case 'lookCnpj': buscarCnpj(t.dataset.who); break;
       case 'lookCep': buscarCep(t.dataset.who); break;
       case 'btnCalc': calcular(); break;
@@ -999,14 +1243,17 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       case 'btnAliq': buscarAliquotas(); break;
       case 'exJson': download('duimp-' + (S.numeroDuimp || 'rascunho') + '.json', JSON.stringify(C.exportar(S), null, 2)); break;
       case 'exCsv': download('duimp-itens.csv', '﻿' + C.itensParaCSV(S.itens), 'text/csv;charset=utf-8'); break;
-      case 'btnNova': S = C.novaDuimp(); R = RP = RW = PAYLOAD = null; salvarRascunho(); renderAll(); montarListas(); toast('DUIMP limpa.'); break;
+      case 'btnNova': S = C.novaDuimp(); R = RP = RW = PAYLOAD = null; SNAP = ''; salvarRascunho(); renderAll(); montarListas(); toast('DUIMP limpa.'); break;
     }
   }
   function lerArquivo(file) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result)); }; r.onerror = function () { rej(new Error('Falha ao ler o arquivo.')); }; r.readAsText(file); }); }
   function onFile(ev) {
     var t = ev.target; if (!t.files || !t.files[0]) return;
     lerArquivo(t.files[0]).then(function (txt) {
-      if (t.id === 'imJson') {
+      if (t.id === 'imHist') {
+        var rh = C.importarHistorico(JSON.parse(txt), H); H = rh.lista; salvarHist(); renderHist();
+        toast(rh.adicionados + ' guia(s) importada(s), ' + rh.atualizados + ' atualizada(s).');
+      } else if (t.id === 'imJson') {
         var r = C.importar(JSON.parse(txt)); S = r.duimp; R = RP = null; salvarRascunho(); renderAll(); montarListas();
         toast(r.origem === 'payload-api' ? 'Payload da API importado (frete/seguro ficam embutidos no valor da mercadoria).' : 'DUIMP importada.');
       } else if (t.id === 'imCsv') {
@@ -1020,7 +1267,247 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   function trocarAba(nome) {
     $$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === nome); });
     $$('.pane').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + nome); });
-    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo();
+    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo(); if (nome === 'hist') renderHist(); if (nome === 'dash') renderDash();
+  }
+
+  /* ---------- histórico de guias ---------- */
+  var LS_H = 'duimp-rtc:historico:v1';
+  var H = [];
+  var HF = { q: '', status: '', uf: '', de: '', ate: '', min: '', max: '', ordem: 'recente', ocultarEx: false };
+  var DF = { considerar: 'todas', incluirExemplos: true, de: '', ate: '', metrica: 'valor' };
+  var envioId = null, delId = null, SNAP = '';
+  var TIPS = {};
+
+  function lerHist() { try { var s = localStorage.getItem(LS_H), a = s ? JSON.parse(s) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function salvarHist() {
+    try { localStorage.setItem(LS_H, JSON.stringify(H)); return true; }
+    catch (e) { toast('Não foi possível gravar o histórico neste navegador (armazenamento cheio ou bloqueado). Exporte o histórico em JSON para não perder os dados.', 'err'); return false; }
+  }
+  function chave() { try { return JSON.stringify(C.montarPayload(S, { id: 'x' })); } catch (e) { return ''; } }
+  function calcAtual() { return !!(RP && SNAP && SNAP === chave()); }
+  function dataBR(iso) { return iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : ''; }
+  function idxHist(id) { for (var i = 0; i < H.length; i++) if (H[i].id === id) return i; return -1; }
+  function rotuloStatus(s) { return C.STATUS_ROTULO[s] || s; }
+
+  /* Grava (ou atualiza) a DUIMP aberta no histórico. O cálculo só acompanha o registro se ainda corresponde ao que está na tela. */
+  function salvarNoHistorico(status) {
+    var res = calcAtual() ? C.resultadoDe(RP, { versaoApi: (VERSAO_API && VERSAO_API.versaoAplicacao) || '', simulado: RW || '' }) : null;
+    if (res && status === 'rascunho') status = 'calculada';
+    var i = S.histId ? idxHist(S.histId) : -1, reg;
+    if (i >= 0) { reg = C.atualizarRegistro(H[i], S, res, status); H[i] = reg; }
+    else { reg = C.novoRegistro(S, res, status, S.histId ? { id: S.histId } : {}); H.unshift(reg); }
+    S.histId = reg.id; salvarRascunho(); salvarHist();
+    return reg;
+  }
+  function abrirRegistro(id, aba) {
+    var i = idxHist(id); if (i < 0) return;
+    var r = H[i];
+    S = C.importar({ formato: 'duimp-rtc', versaoFormato: 1, duimp: r.duimp }).duimp;
+    S.histId = r.origem === 'exemplo' ? '' : r.id;   // exemplo aberto vira nova DUIMP ao salvar
+    R = null; PAYLOAD = null; RW = (r.resultado && r.resultado.dadosSimulados) || null;
+    if (r.resultado) {
+      RP = { linhas: r.resultado.linhas.map(function (l) { return Object.assign({ memoria: {}, simulado: false }, l); }), totais: r.resultado.totais,
+             nota: r.resultado.nota || '', doHistorico: r.resultado.calculadoEm, ilustrativo: r.resultado.origem === 'ilustrativo' };
+      SNAP = chave();
+    } else { RP = null; SNAP = ''; }
+    openItem = 0; salvarRascunho(); renderAll(); montarListas(); carregarMunicipios(S.uf); carregarTabelas();
+    trocarAba(aba || 'ident');
+    toast(r.origem === 'exemplo' ? 'Guia de exemplo aberta (fictícia). Ao salvar, será criada uma nova DUIMP no histórico.' : 'DUIMP aberta a partir do histórico.');
+  }
+  function listaFiltrada() {
+    return C.ordenarHistorico(C.buscarHistorico(H, Object.assign({}, HF, { origem: HF.ocultarEx ? 'usuario' : '' })), HF.ordem);
+  }
+  function selOpts(pares, sel) { return pares.map(function (p) { return '<option value="' + esc(p[0]) + '"' + (p[0] === sel ? ' selected' : '') + '>' + esc(p[1]) + '</option>'; }).join(''); }
+
+  function renderHist() {
+    var ufs = {}; H.forEach(function (r) { if (r.resumo.uf) ufs[r.resumo.uf] = 1; });
+    var h = '<div class="bar"><button class="btn primary" data-act="hSalvar" type="button">Salvar DUIMP atual no histórico</button>' +
+      '<button class="btn" data-act="hExemplos" type="button">Carregar 10 guias de exemplo</button><button class="btn" data-act="hRmEx" type="button">Remover exemplos</button>' +
+      '<button class="btn" data-act="hExJson" type="button">Exportar histórico (JSON)</button><button class="btn" data-act="hExCsv" type="button">Exportar lista filtrada (CSV)</button>' +
+      '<label class="btn">Importar histórico <input type="file" id="imHist" accept=".json,application/json" hidden></label></div>' +
+      '<p class="hint">O histórico fica guardado neste navegador. A ferramenta não transmite nada ao Portal Único: “Enviada” é uma marcação manual, para você controlar o que já foi registrado lá. Guias de <b>exemplo</b> têm dados fictícios e cálculo ilustrativo.</p>' +
+      '<section class="card"><div class="row"><label class="f w3"><span>Buscar (importador, CNPJ, nº da DUIMP, NCM, descrição, município, protocolo…)</span><input id="hf-q" value="' + esc(HF.q) + '" autocomplete="off"></label>' +
+      '<label class="f"><span>Situação</span><select id="hf-status"><option value="">Todas</option>' + selOpts(C.STATUS.map(function (s) { return [s, rotuloStatus(s)]; }), HF.status) + '</select></label>' +
+      '<label class="f"><span>UF</span><select id="hf-uf"><option value="">Todas</option>' + selOpts(Object.keys(ufs).sort().map(function (u) { return [u, u]; }), HF.uf) + '</select></label>' +
+      '<label class="f"><span>Ordenar por</span><select id="hf-ordem">' + selOpts([['recente', 'Mais recentes'], ['data', 'Data de registro'], ['valor', 'Maior valor'], ['importador', 'Importador (A–Z)']], HF.ordem) + '</select></label></div>' +
+      '<div class="row"><label class="f"><span>Registro de</span><input id="hf-de" type="date" value="' + esc(HF.de) + '"></label><label class="f"><span>até</span><input id="hf-ate" type="date" value="' + esc(HF.ate) + '"></label>' +
+      '<label class="f"><span>Valor aduaneiro mín. (R$)</span><input id="hf-min" inputmode="decimal" value="' + esc(HF.min) + '"></label><label class="f"><span>máx. (R$)</span><input id="hf-max" inputmode="decimal" value="' + esc(HF.max) + '"></label>' +
+      '<label class="chk self"><input type="checkbox" id="hf-ex"' + (HF.ocultarEx ? ' checked' : '') + '> Ocultar exemplos</label><button class="btn sm self" data-act="hLimpar" type="button">Limpar filtros</button></div></section>' +
+      '<div class="hint" id="histInfo"></div><div class="tblw" id="histLista"></div>';
+    $('#tab-hist').innerHTML = h; renderHistLista();
+  }
+  function renderHistLista() {
+    var lista = listaFiltrada(), el = $('#histLista'); if (!el) return;
+    $('#histInfo').textContent = H.length ? lista.length + ' de ' + H.length + ' guia(s)' : '';
+    if (!H.length) { el.innerHTML = '<div class="aviso">Nenhuma guia no histórico. Elas são gravadas ao calcular, ao imprimir a guia ou ao clicar em “Salvar DUIMP atual”. Para ver a ferramenta funcionando, clique em “Carregar 10 guias de exemplo”.</div>'; return; }
+    if (!lista.length) { el.innerHTML = '<div class="aviso">Nenhuma guia encontrada com esses filtros.</div>'; return; }
+    var tv = 0, tc = 0, ti = 0;
+    var rows = lista.map(function (r) {
+      var s = r.resumo; tv += s.valorAduaneiro; tc += s.cbs; ti += s.ibs;
+      var st = '<span class="pill' + (r.status === 'enviada' ? ' ok' : '') + '">' + esc(rotuloStatus(r.status)) + '</span>' + (r.origem === 'exemplo' ? ' <span class="pill bad" title="Dados fictícios">exemplo</span>' : '') +
+        (r.status === 'enviada' ? '<div class="hint">' + esc(dataBR(r.enviadaEm)) + (r.protocolo ? ' · ' + esc(r.protocolo) : '') + '</div>' : '');
+      var ac = '<button class="lnk" data-act="hAbrir" data-id="' + esc(r.id) + '" type="button">abrir</button><button class="lnk" data-act="hGuia" data-id="' + esc(r.id) + '" type="button">guia</button>' +
+        (r.status === 'enviada' ? '<button class="lnk" data-act="hUndo" data-id="' + esc(r.id) + '" type="button">desfazer envio</button>' : '<button class="lnk" data-act="hEnvio" data-id="' + esc(r.id) + '" type="button">registrar envio</button>') +
+        '<button class="lnk danger" data-act="hDel" data-id="' + esc(r.id) + '" type="button">' + (delId === r.id ? 'confirmar exclusão' : 'excluir') + '</button>';
+      var tr = '<tr><td>' + esc(dataBR(s.dataRegistro)) + '</td><td>' + esc(s.importadorNome) + '<div class="hint">' + esc(C.fmtCnpj(s.cnpj)) + (s.numeroDuimp ? ' · ' + esc(s.numeroDuimp) : '') + '</div></td>' +
+        '<td>' + esc(s.municipioNome || '') + (s.uf ? ' / ' + esc(s.uf) : '') + '</td><td class="r">' + s.qtdItens + '</td><td class="r">' + C.brl(s.valorAduaneiro) + '</td>' +
+        '<td class="r">' + (s.calculado ? C.brl(s.cbs) : '—') + '</td><td class="r">' + (s.calculado ? C.brl(s.ibs) : '—') + '</td><td>' + st + '</td><td>' + ac + '</td></tr>';
+      if (envioId === r.id) tr += '<tr><td colspan="9"><div class="row"><label class="f"><span>Protocolo / nº de registro no Portal Único (opcional)</span><input id="envProt" autocomplete="off"></label>' +
+        '<label class="f"><span>Data do envio</span><input id="envData" type="date" value="' + esc(C.novaDuimp().dataRegistro) + '"></label>' +
+        '<button class="btn primary sm self" data-act="hEnvOk" data-id="' + esc(r.id) + '" type="button">Confirmar</button><button class="btn sm self" data-act="hEnvCancel" type="button">Cancelar</button></div></td></tr>';
+      return tr;
+    }).join('');
+    el.innerHTML = '<table><thead><tr><th>Registro</th><th>Importador</th><th>Destino</th><th class="r">Itens</th><th class="r">Valor aduaneiro (R$)</th><th class="r">CBS (R$)</th><th class="r">IBS (R$)</th><th>Situação</th><th></th></tr></thead><tbody>' + rows +
+      '</tbody><tfoot><tr><td colspan="4">Total da seleção</td><td class="r">' + C.brl(tv) + '</td><td class="r">' + C.brl(tc) + '</td><td class="r">' + C.brl(ti) + '</td><td colspan="2"></td></tr></tfoot></table>';
+  }
+  function filtrosHist(t) {
+    var m = { 'hf-q': 'q', 'hf-status': 'status', 'hf-uf': 'uf', 'hf-de': 'de', 'hf-ate': 'ate', 'hf-min': 'min', 'hf-max': 'max', 'hf-ordem': 'ordem' };
+    if (m[t.id]) HF[m[t.id]] = t.value; else if (t.id === 'hf-ex') HF.ocultarEx = t.checked; else return false;
+    renderHistLista(); return true;
+  }
+
+  /* ---------- gráficos (SVG) ---------- */
+  function nice(max) { if (!(max > 0)) return 1; var e = Math.pow(10, Math.floor(Math.log10(max))), f = max / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; }
+  function compact(v) { return Number(v).toLocaleString('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }); }
+  function cortar(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+  function topRound(x, y, w, h, r) { r = Math.min(r, w / 2, h); return 'M' + x + ' ' + (y + h) + 'V' + (y + r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'H' + (x + w - r) + 'Q' + (x + w) + ' ' + y + ' ' + (x + w) + ' ' + (y + r) + 'V' + (y + h) + 'Z'; }
+  function rightRound(x, y, w, h, r) { r = Math.min(r, h / 2, w); return 'M' + x + ' ' + y + 'H' + (x + w - r) + 'Q' + (x + w) + ' ' + y + ' ' + (x + w) + ' ' + (y + r) + 'V' + (y + h - r) + 'Q' + (x + w) + ' ' + (y + h) + ' ' + (x + w - r) + ' ' + (y + h) + 'H' + x + 'Z'; }
+
+  /* barras verticais: cats = rótulos; series = [{nome, cls, values}] */
+  function barV(id, cats, series, fmt, rotulo) {
+    var W = 640, HH = 232, L = 52, Rr = 8, T = 16, B = 28, pw = W - L - Rr, ph = HH - T - B, max = 0, ns = series.length;
+    series.forEach(function (s) { s.values.forEach(function (v) { if (v > max) max = v; }); });
+    var step = nice(max / 4), n = Math.max(1, Math.ceil(max / step - 1e-9)), top = step * n, y = function (v) { return T + ph - (v / top) * ph; };
+    var g = '<svg class="ch" viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="' + esc(rotulo) + '" data-chart="' + id + '">', i, k;
+    for (k = 0; k <= n; k++) g += '<line class="gl" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(k * step) + '" y2="' + y(k * step) + '"/><text x="' + (L - 6) + '" y="' + (y(k * step) + 4) + '" text-anchor="end">' + esc(compact(k * step)) + '</text>';
+    var gw = pw / cats.length, bw = Math.min(24, (gw * 0.7 - (ns - 1) * 2) / ns), tot = ns * bw + (ns - 1) * 2, imax = -1, vmax = 0;
+    if (ns === 1) series[0].values.forEach(function (v, j) { if (v > vmax) { vmax = v; imax = j; } });
+    TIPS[id] = [];
+    for (i = 0; i < cats.length; i++) {
+      var x0 = L + i * gw + (gw - tot) / 2;
+      g += '<g class="grp" data-g="' + i + '">';
+      series.forEach(function (s, j) {
+        var v = s.values[i], h = (v / top) * ph;
+        if (h > 0.4) g += '<path class="b ' + s.cls + '" d="' + topRound(+(x0 + j * (bw + 2)).toFixed(2), +y(v).toFixed(2), +bw.toFixed(2), +h.toFixed(2), 4) + '"/>';
+      });
+      if (i === imax && vmax > 0) g += '<text class="lbl" x="' + (L + i * gw + gw / 2) + '" y="' + (y(vmax) - 5) + '" text-anchor="middle">' + esc(fmt(vmax)) + '</text>';
+      g += '<text x="' + (L + i * gw + gw / 2) + '" y="' + (HH - 8) + '" text-anchor="middle">' + esc(C.mesRotulo(cats[i])) + '</text></g>';
+      g += '<rect class="hit" data-c="' + id + '" data-k="' + i + '" x="' + (L + i * gw) + '" y="' + T + '" width="' + gw + '" height="' + (ph + B) + '"/>';
+      TIPS[id].push({ titulo: C.mesRotulo(cats[i]), linhas: series.map(function (s) { return { cls: s.cls, nome: s.nome, valor: fmt(s.values[i]) }; }) });
+    }
+    return g + '</svg>';
+  }
+  /* barras horizontais: itens = [{rotulo, completo, valor, extra}] */
+  function barH(id, itens, fmt, rotulo) {
+    var W = 640, L = 214, Rr = 92, RH = 28, HH = itens.length * RH + 6, pw = W - L - Rr, max = 0;
+    itens.forEach(function (it) { if (it.valor > max) max = it.valor; });
+    var g = '<svg class="ch" viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="' + esc(rotulo) + '" data-chart="' + id + '">'; TIPS[id] = [];
+    itens.forEach(function (it, i) {
+      var y = 3 + i * RH, w = max > 0 ? Math.max(it.valor > 0 ? 2 : 0, (it.valor / max) * pw) : 0;
+      g += '<g class="grp" data-g="' + i + '"><text x="' + (L - 8) + '" y="' + (y + 18) + '" text-anchor="end"><title>' + esc(it.completo) + '</title>' + esc(cortar(it.rotulo, 28)) + '</text>';
+      if (w > 0) g += '<path class="b s1" d="' + rightRound(L, y + 5, +w.toFixed(2), 16, 4) + '"/>';
+      g += '<text class="lbl" x="' + (L + w + 6) + '" y="' + (y + 18) + '">' + esc(fmt(it.valor)) + '</text></g>';
+      g += '<rect class="hit" data-c="' + id + '" data-k="' + i + '" x="0" y="' + y + '" width="' + W + '" height="' + RH + '"/>';
+      TIPS[id].push({ titulo: it.completo, linhas: [{ cls: 's1', nome: it.nomeValor || 'Valor', valor: fmt(it.valor) }].concat(it.extra ? [{ cls: '', nome: '', valor: it.extra }] : []) });
+    });
+    return g + '</svg>';
+  }
+  function tabelaVista(cab, linhas) {
+    return '<details class="mem"><summary>Ver como tabela</summary><div class="tblw"><table><thead><tr>' + cab.map(function (c, i) { return '<th' + (i ? ' class="r"' : '') + '>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      linhas.map(function (l) { return '<tr>' + l.map(function (c, i) { return '<td' + (i ? ' class="r"' : '') + '>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></details>';
+  }
+  function legenda(itens) { return '<div class="leg">' + itens.map(function (x) { return '<span><i class="sw ' + x[1] + '"></i>' + esc(x[0]) + '</span>'; }).join('') + '</div>'; }
+  function mostrarTip(ev) {
+    var tip = $('#tip'), t = ev.target.closest ? ev.target.closest('[data-c]') : null;
+    $$('.ch.dim').forEach(function (s) { s.classList.remove('dim'); $$('.grp.hov', s).forEach(function (x) { x.classList.remove('hov'); }); });
+    if (!t) { tip.hidden = true; return; }
+    var d = (TIPS[t.dataset.c] || [])[parseInt(t.dataset.k, 10)]; if (!d) { tip.hidden = true; return; }
+    var svg = t.ownerSVGElement; if (svg) { svg.classList.add('dim'); var g = svg.querySelector('.grp[data-g="' + t.dataset.k + '"]'); if (g) g.classList.add('hov'); }
+    tip.textContent = '';
+    var b = document.createElement('b'); b.textContent = d.titulo; tip.appendChild(b);
+    d.linhas.forEach(function (l) {
+      var p = document.createElement('div');
+      if (l.cls) { var sw = document.createElement('i'); sw.className = 'sw ' + l.cls; p.appendChild(sw); }
+      p.appendChild(document.createTextNode((l.nome ? l.nome + ': ' : '') + l.valor)); tip.appendChild(p);
+    });
+    tip.hidden = false;
+    var x = ev.clientX + 14, y = ev.clientY + 14, w = tip.offsetWidth || 160;
+    if (x + w > window.innerWidth - 8) x = ev.clientX - w - 14;
+    tip.style.left = Math.max(4, x) + 'px'; tip.style.top = y + 'px';
+  }
+
+  /* ---------- dashboard ---------- */
+  function renderDash() {
+    var db = C.dashboard(H, DF), k = db.kpis, nEx = H.filter(function (r) { return r.origem === 'exemplo'; }).length, brl = function (v) { return 'R$ ' + C.brl(v); };
+    var enviadas = db.porStatus.filter(function (s) { return s.status === 'enviada'; })[0].qtd;
+    var h = '<div class="row"><label class="f"><span>Considerar</span><select id="df-considerar">' + selOpts([['todas', 'Todas as guias'], ['emitidas', 'Emitidas e enviadas'], ['enviadas', 'Somente enviadas']], DF.considerar) + '</select></label>' +
+      '<label class="f"><span>Registro de</span><input id="df-de" type="date" value="' + esc(DF.de) + '"></label><label class="f"><span>até</span><input id="df-ate" type="date" value="' + esc(DF.ate) + '"></label>' +
+      '<label class="f"><span>Gráfico mensal</span><select id="df-metrica">' + selOpts([['valor', 'Valor aduaneiro'], ['cbs', 'CBS'], ['ibs', 'IBS'], ['qtd', 'Nº de guias']], DF.metrica) + '</select></label>' +
+      '<label class="chk self"><input type="checkbox" id="df-ex"' + (DF.incluirExemplos ? ' checked' : '') + '> Incluir exemplos</label></div>';
+    if (!k.qtd) {
+      $('#tab-dash').innerHTML = h + '<div class="aviso">Sem guias no período/seleção. Calcule ou salve DUIMPs no histórico, ou carregue os 10 exemplos na aba Histórico.</div>'; return;
+    }
+    if (DF.incluirExemplos && nEx) h += '<div class="aviso">Os números incluem ' + nEx + ' guia(s) de <b>exemplo</b> (dados fictícios, cálculo ilustrativo). Desmarque “Incluir exemplos” para ver só os seus dados.</div>';
+    h += '<div class="tot"><div><span>Guias</span><b>' + k.qtd + '</b><span>' + enviadas + ' enviada(s)</span></div><div><span>Valor aduaneiro</span><b>' + brl(k.valorAduaneiro) + '</b></div>' +
+      '<div><span>CBS</span><b>' + brl(k.cbs) + '</b></div><div><span>IBS</span><b>' + brl(k.ibs) + '</b></div>' + (k.is ? '<div><span>Imposto Seletivo</span><b>' + brl(k.is) + '</b></div>' : '') +
+      '<div><span>Ticket médio</span><b>' + brl(k.ticketMedio) + '</b></div><div><span>Itens declarados</span><b>' + k.itens + '</b></div></div>';
+    TIPS = {};
+    var cats = db.porMes.map(function (m) { return m.mes; }), mt = DF.metrica;
+    var fm = { valor: brl, cbs: brl, ibs: brl, qtd: function (v) { return String(v); } }[mt], campo = { valor: 'valorAduaneiro', cbs: 'cbs', ibs: 'ibs', qtd: 'qtd' }[mt];
+    var rot = { valor: 'Valor aduaneiro por mês', cbs: 'CBS por mês', ibs: 'IBS por mês', qtd: 'Guias por mês' }[mt];
+    h += '<div class="grid">';
+    h += '<section class="card"><h3>' + rot + '</h3>' + barV('c1', cats, [{ nome: rot, cls: 's1', values: db.porMes.map(function (m) { return m[campo]; }) }], fm, rot) +
+      tabelaVista(['Mês', rot], db.porMes.map(function (m) { return [C.mesRotulo(m.mes), fm(m[campo])]; })) + '</section>';
+    h += '<section class="card"><h3>CBS e IBS por mês</h3>' + legenda([['CBS', 's1'], ['IBS', 's2']]) +
+      barV('c2', cats, [{ nome: 'CBS', cls: 's1', values: db.porMes.map(function (m) { return m.cbs; }) }, { nome: 'IBS', cls: 's2', values: db.porMes.map(function (m) { return m.ibs; }) }], brl, 'CBS e IBS por mês') +
+      tabelaVista(['Mês', 'CBS', 'IBS'], db.porMes.map(function (m) { return [C.mesRotulo(m.mes), brl(m.cbs), brl(m.ibs)]; })) + '<p class="hint">Em 2026 os valores de CBS/IBS na DUIMP são informativos (alíquotas de teste).</p></section>';
+    h += '<section class="card"><h3>Guias por situação</h3>' + barH('c3', db.porStatus.map(function (s) { return { rotulo: s.rotulo, completo: s.rotulo, valor: s.qtd, nomeValor: 'Guias' }; }), function (v) { return String(v); }, 'Guias por situação') +
+      tabelaVista(['Situação', 'Guias'], db.porStatus.map(function (s) { return [s.rotulo, String(s.qtd)]; })) + '</section>';
+    h += '<section class="card"><h3>Valor aduaneiro por UF de destino</h3>' + barH('c4', db.porUf.map(function (u) { return { rotulo: u.uf, completo: u.uf, valor: u.valorAduaneiro, nomeValor: 'Valor aduaneiro', extra: u.qtd + ' guia(s)' }; }), brl, 'Valor aduaneiro por UF') +
+      tabelaVista(['UF', 'Guias', 'Valor aduaneiro'], db.porUf.map(function (u) { return [u.uf, String(u.qtd), brl(u.valorAduaneiro)]; })) + '</section>';
+    h += '<section class="card"><h3>Principais NCMs (valor aduaneiro)</h3>' + barH('c5', db.topNcm.map(function (n) { var d = n.ncm + (n.descricao ? ' · ' + n.descricao : ''); return { rotulo: d, completo: d, valor: n.valorAduaneiro, nomeValor: 'Valor aduaneiro', extra: n.qtd + ' item(ns)' }; }), brl, 'Principais NCMs') +
+      tabelaVista(['NCM', 'Itens', 'Valor aduaneiro'], db.topNcm.map(function (n) { return [n.ncm + (n.descricao ? ' · ' + n.descricao : ''), String(n.qtd), brl(n.valorAduaneiro)]; })) + '</section>';
+    h += '<section class="card"><h3>Principais importadores</h3>' + barH('c6', db.topImportadores.map(function (m) { return { rotulo: String(m.nome).replace(/ \(exemplo fictício\)$/, ''), completo: m.nome + (m.cnpj ? ' · ' + C.fmtCnpj(m.cnpj) : ''), valor: m.valorAduaneiro, nomeValor: 'Valor aduaneiro', extra: m.qtd + ' guia(s)' }; }), brl, 'Principais importadores') +
+      tabelaVista(['Importador', 'Guias', 'Valor aduaneiro'], db.topImportadores.map(function (m) { return [m.nome, String(m.qtd), brl(m.valorAduaneiro)]; })) + '</section>';
+    h += '</div><section class="card" style="margin-top:14px"><h3>Últimas movimentações</h3><div class="tblw"><table><thead><tr><th>Atualizada em</th><th>Importador</th><th>Situação</th><th class="r">Valor aduaneiro (R$)</th></tr></thead><tbody>' +
+      db.recentes.map(function (r) { return '<tr><td>' + esc(dataBR(r.atualizadoEm)) + '</td><td>' + esc(r.resumo.importadorNome) + '</td><td>' + esc(rotuloStatus(r.status)) + '</td><td class="r">' + C.brl(r.resumo.valorAduaneiro) + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
+    $('#tab-dash').innerHTML = h;
+  }
+  function filtrosDash(t) {
+    var m = { 'df-considerar': 'considerar', 'df-de': 'de', 'df-ate': 'ate', 'df-metrica': 'metrica' };
+    if (m[t.id]) DF[m[t.id]] = t.value; else if (t.id === 'df-ex') DF.incluirExemplos = t.checked; else return false;
+    renderDash(); return true;
+  }
+  function acaoHist(a, t) {
+    var id = t.dataset.id, i;
+    switch (a) {
+      case 'hSalvar':
+        var pe = C.pendencias(S).length, reg = salvarNoHistorico('rascunho'); renderHist();
+        toast('Salva no histórico (' + rotuloStatus(reg.status).toLowerCase() + ')' + (pe ? ' — ainda há ' + pe + ' pendência(s) de preenchimento.' : '.')); break;
+      case 'hExemplos':
+        var r = C.importarHistorico({ formato: 'duimp-rtc-historico', registros: window.DuimpExemplos.gerar(C) }, H); H = r.lista; salvarHist(); renderHist();
+        toast(r.adicionados ? r.adicionados + ' guia(s) de exemplo carregada(s) (dados fictícios).' : 'Os exemplos já estão no histórico.'); break;
+      case 'hRmEx':
+        i = H.length; H = H.filter(function (x) { return x.origem !== 'exemplo'; }); salvarHist(); renderHist(); toast((i - H.length) + ' guia(s) de exemplo removida(s).'); break;
+      case 'hExJson': download('historico-duimp-rtc.json', JSON.stringify(C.exportarHistorico(H), null, 2)); break;
+      case 'hExCsv': download('historico-duimp-rtc.csv', '﻿' + C.historicoParaCSV(listaFiltrada()), 'text/csv;charset=utf-8'); break;
+      case 'hLimpar': HF = { q: '', status: '', uf: '', de: '', ate: '', min: '', max: '', ordem: 'recente', ocultarEx: false }; renderHist(); break;
+      case 'hAbrir': abrirRegistro(id, 'ident'); break;
+      case 'hGuia': abrirRegistro(id, 'guias'); break;
+      case 'hEnvio': envioId = id; delId = null; renderHistLista(); var p = $('#envProt'); if (p) p.focus(); break;
+      case 'hEnvCancel': envioId = null; renderHistLista(); break;
+      case 'hEnvOk':
+        i = idxHist(id); if (i < 0) break;
+        var data = ($('#envData') || {}).value || C.novaDuimp().dataRegistro;
+        H[i] = Object.assign({}, H[i], { status: 'enviada', protocolo: (($('#envProt') || {}).value || '').trim(), enviadaEm: data + 'T12:00:00.000Z', atualizadoEm: new Date().toISOString() });
+        envioId = null; salvarHist(); renderHistLista(); toast('Envio registrado.'); break;
+      case 'hUndo':
+        i = idxHist(id); if (i < 0) break;
+        H[i] = Object.assign({}, H[i], { status: H[i].resultado ? 'emitida' : 'emitida', protocolo: '', enviadaEm: '', atualizadoEm: new Date().toISOString() }); salvarHist(); renderHistLista(); toast('Envio desfeito (situação: guia emitida).'); break;
+      case 'hDel':
+        if (delId !== id) { delId = id; envioId = null; renderHistLista(); break; }
+        H = H.filter(function (x) { return x.id !== id; }); delId = null; salvarHist(); renderHistLista(); toast('Guia excluída do histórico.'); break;
+    }
   }
 
   /* ---------- início ---------- */
@@ -1029,14 +1516,16 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     if (rasc && rasc.itens) { try { S = C.importar({ formato: 'duimp-rtc', versaoFormato: 1, duimp: rasc }).duimp; } catch (e) { S = C.novaDuimp(); } }
     var salvo = null; try { salvo = localStorage.getItem(LS_API); } catch (e) { /* sem storage */ }
     $('#apiUrl').value = location.pathname.indexOf('/api/') === 0 ? location.origin + '/api' : (salvo || RENDER_URL);
+    H = lerHist();
     renderAll();
+    document.addEventListener('mousemove', mostrarTip);
     document.addEventListener('input', onInput); document.addEventListener('change', onInput);
     document.addEventListener('click', onClick); document.addEventListener('change', onFile);
     $$('.tab').forEach(function (b) { b.addEventListener('click', function () { trocarAba(b.dataset.tab); }); });
     $('#btnApi').addEventListener('click', function () { try { localStorage.setItem(LS_API, apiBase()); } catch (e) { /* ok */ } carregarVersao().then(function (ok) { if (ok) carregarTabelas(); }); });
     carregarVersao().then(function (ok) { if (ok) carregarTabelas(); });
   }
-  window.DuimpApp = { init: init, _estado: function () { return S; } };
+  window.DuimpApp = { init: init, _estado: function () { return S; }, _historico: function () { return H; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 
