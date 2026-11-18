@@ -38,7 +38,7 @@ details.item>summary{cursor:pointer;display:flex;gap:10px;align-items:center}.it
 .tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tot div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tot span{display:block;font-size:12px;color:var(--mut)}.tot b{font-size:16px}
 .tblw{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{background:var(--pri2);font-weight:600}.r{text-align:right;font-variant-numeric:tabular-nums}tfoot td{font-weight:700}
 .mem{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0}.mem summary{cursor:pointer}.pre,pre{white-space:pre-wrap;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}pre{max-height:380px;overflow:auto;background:var(--bg);padding:8px;border-radius:6px}
-.erros{margin:0 0 12px;padding:8px 12px;border-radius:8px;background:var(--badbg);color:var(--bad);font-size:13px}.erros.ok{background:var(--okbg);color:var(--ok)}
+.erros{margin:0 0 12px;padding:8px 12px;border-radius:8px;background:var(--pri2);color:var(--ink);font-size:13px;line-height:1.9}.erros.ok{background:var(--okbg);color:var(--ok)}.erros .lnk.go{text-decoration:underline;font-size:13px;padding:0 2px}.inv{outline:2px solid var(--bad)!important;background:var(--badbg)!important}
 .preview{background:#fff;color:#111;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-top:14px}.preview table,.preview th,.preview td{color:#111}.preview th{background:#eef2f7}
 .gh{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.gh h2{margin:0;font-size:17px}.gh p{margin:4px 0 0;font-size:12px;color:#444}.gm{font-size:11px;text-align:right;color:#444}
 .kv th{width:18%;background:#f4f6f9}.fine{font-size:11px;color:#444}.warn{background:#fff5da;border:1px solid #e5cf8a;padding:6px 10px;font-size:12px;color:#5b4300}
@@ -291,40 +291,55 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   }
 
   /* ---------- validação ---------- */
-  function validar(d) {
+  /* Cada pendência traz a aba e o seletor do campo para o usuário ir direto a ele. */
+  function pendencias(d) {
     var e = [];
-    if (!docValido(d.importador.cnpj)) e.push('Importador: CNPJ/CPF ausente ou inválido.');
+    function add(msg, tab, sel, item) { e.push({ msg: msg, tab: tab, sel: sel, item: item === undefined ? null : item }); }
+    if (!docValido(d.importador.cnpj)) add('Importador: CNPJ/CPF ausente ou inválido.', 'ident', '[data-b="importador.cnpj"]');
     if (d.caracterizacao !== 'direta' && !docValido(d.adquirente.cnpj))
-      e.push('Adquirente/encomendante: CNPJ/CPF ausente ou inválido.');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.dataRegistro || '')) e.push('Data de registro (fato gerador) inválida.');
-    if (!d.uf || d.uf.length !== 2) e.push('UF do local da operação de consumo não informada.');
-    if (!/^\d{7}$/.test(String(d.municipio || ''))) e.push('Município do local da operação de consumo não informado (código IBGE de 7 dígitos).');
-    if (num(d.cambio) <= 0) e.push('Taxa de câmbio deve ser maior que zero.');
+      add('Adquirente/encomendante: CNPJ/CPF ausente ou inválido.', 'ident', '[data-b="adquirente.cnpj"]');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.dataRegistro || '')) add('Data de registro (fato gerador) inválida.', 'ident', '[data-b="dataRegistro"]');
+    if (!d.uf || d.uf.length !== 2) add('UF do local da operação de consumo não informada.', 'ident', '#uf');
+    if (!/^\d{7}$/.test(String(d.municipio || ''))) add('Município do local da operação de consumo não informado (código IBGE de 7 dígitos).', 'ident', '#munInp');
+    if (num(d.cambio) <= 0) add('Taxa de câmbio deve ser maior que zero.', 'ident', '[data-b="cambio"]');
     if (exigeAliquotasNominais(d) && !(String(d.aliq.cbs) !== '' && String(d.aliq.ibsUf) !== '' && String(d.aliq.ibsMun) !== ''))
-      e.push('Para fatos geradores a partir de 01/01/2027, informe as alíquotas nominais (CBS, IBS estadual, IBS municipal).');
-    if (!d.itens.length) e.push('A DUIMP precisa de ao menos um item.');
+      add('Para fatos geradores a partir de 01/01/2027, informe as alíquotas nominais (CBS, IBS estadual, IBS municipal).', 'ident', '[data-b="aliq.cbs"]');
+    if (!d.itens.length) add('A DUIMP precisa de ao menos um item.', 'itens', '#btnAddItem');
     var vistos = {};
     d.itens.forEach(function (it, i) {
       var n = 'Item ' + (it.numero || i + 1) + ': ';
-      if (vistos[it.numero]) e.push(n + 'número de item repetido.'); vistos[it.numero] = true;
-      if (onlyDigits(it.ncm).length !== 8) e.push(n + 'NCM deve ter 8 dígitos.');
-      if (!/^\d{3}$/.test(onlyDigits(it.cst))) e.push(n + 'CST (3 dígitos) não informado.');
-      if (!/^\d{6}$/.test(onlyDigits(it.cClassTrib))) e.push(n + 'cClassTrib (6 dígitos) não informado.');
-      if (num(it.vMerc) <= 0 && !(it.modoBase === 'manual' && num(it.baseManual) > 0)) e.push(n + 'valor da mercadoria não informado.');
-      if (it.is && it.is.ativo) {
-        if (!/^\d{3}$/.test(onlyDigits(it.is.cst)) || !/^\d{6}$/.test(onlyDigits(it.is.cClassTrib)))
-          e.push(n + 'Imposto Seletivo: CST e cClassTrib do IS são obrigatórios.');
-      }
-      if (it.tribReg && it.tribReg.ativo &&
-          (!/^\d{3}$/.test(onlyDigits(it.tribReg.cst)) || !/^\d{6}$/.test(onlyDigits(it.tribReg.cClassTrib))))
-        e.push(n + 'Tributação regular: CST e cClassTrib são obrigatórios.');
+      function campo(f) { return '[data-i="' + i + '"][data-f="' + f + '"]'; }
+      if (vistos[it.numero]) add(n + 'número de item repetido.', 'itens', campo('numero'), i); vistos[it.numero] = true;
+      if (onlyDigits(it.ncm).length !== 8) add(n + 'NCM deve ter 8 dígitos.', 'itens', campo('ncm'), i);
+      if (!/^\d{3}$/.test(onlyDigits(it.cst))) add(n + 'CST (3 dígitos) não informado.', 'itens', campo('cst'), i);
+      if (!/^\d{6}$/.test(onlyDigits(it.cClassTrib))) add(n + 'cClassTrib (6 dígitos) não informado.', 'itens', campo('cClassTrib'), i);
+      if (num(it.vMerc) <= 0 && !(it.modoBase === 'manual' && num(it.baseManual) > 0))
+        add(n + 'valor da mercadoria não informado.', 'itens', campo(it.modoBase === 'manual' ? 'baseManual' : 'vMerc'), i);
+      if (it.is && it.is.ativo && (!/^\d{3}$/.test(onlyDigits(it.is.cst)) || !/^\d{6}$/.test(onlyDigits(it.is.cClassTrib))))
+        add(n + 'Imposto Seletivo: CST e cClassTrib do IS são obrigatórios.', 'itens', campo('is.cst'), i);
+      if (it.tribReg && it.tribReg.ativo && (!/^\d{3}$/.test(onlyDigits(it.tribReg.cst)) || !/^\d{6}$/.test(onlyDigits(it.tribReg.cClassTrib))))
+        add(n + 'Tributação regular: CST e cClassTrib são obrigatórios.', 'itens', campo('tribReg.cst'), i);
     });
     if (d.anvisa && d.anvisa.ativo) {
-      if (!d.anvisa.assuntoPrimario) e.push('Guia Anvisa: código de assunto de petição primária não informado.');
-      if (d.anvisa.cnpjDetentor && !cnpjValido(d.anvisa.cnpjDetentor)) e.push('Guia Anvisa: CNPJ do detentor da regularização inválido.');
-      if (d.anvisa.cnpjRecinto && !cnpjValido(d.anvisa.cnpjRecinto)) e.push('Guia Anvisa: CNPJ do recinto armazenador inválido.');
+      if (!d.anvisa.assuntoPrimario) add('Guia Anvisa: código de assunto de petição primária não informado.', 'guias', '[data-b="anvisa.assuntoPrimario"]');
+      if (d.anvisa.cnpjDetentor && !cnpjValido(d.anvisa.cnpjDetentor)) add('Guia Anvisa: CNPJ do detentor da regularização inválido.', 'guias', '[data-b="anvisa.cnpjDetentor"]');
+      if (d.anvisa.cnpjRecinto && !cnpjValido(d.anvisa.cnpjRecinto)) add('Guia Anvisa: CNPJ do recinto armazenador inválido.', 'guias', '[data-b="anvisa.cnpjRecinto"]');
     }
     return e;
+  }
+  function validar(d) { return pendencias(d).map(function (x) { return x.msg; }); }
+
+  /* DUIMP fictícia para testar a ferramenta sem digitar nada. */
+  function exemploDuimp() {
+    var d = novaDuimp();
+    d.importador = { cnpj: '11.222.333/0001-81', nome: 'EMPRESA EXEMPLO IMPORTADORA LTDA (fictícia)', cep: '80010-000', logradouro: 'Rua de Exemplo', numero: '100', bairro: 'Centro', cidade: 'Curitiba', uf: 'PR', situacao: '' };
+    d.uf = 'PR'; d.municipio = '4106902'; d.municipioNome = 'Curitiba'; d.destinoCep = '80010-000';
+    d.moeda = 'USD'; d.cambio = 5; d.incoterm = 'FOB'; d.freteMoeda = 100; d.seguroMoeda = 10; d.modal = 'maritimo'; d.paisProc = 'China';
+    var it = novoItem(1);
+    it.descricao = 'Telefone celular (exemplo)'; it.ncm = '85171300'; it.qtd = 10; it.unidade = 'UN'; it.pesoLiq = 2;
+    it.vMerc = 2000; it.ii = 1800; it.ipi = 0; it.pis = 0; it.cofins = 0; it.cst = '000'; it.cClassTrib = '000001';
+    d.itens = [it];
+    return d;
   }
 
   /* ---------- resposta da API ---------- */
@@ -469,7 +484,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   root.DuimpCore = {
     num: num, r2: r2, brl: brl, onlyDigits: onlyDigits, cnpjValido: cnpjValido, cpfValido: cpfValido, docValido: docValido,
     novoItem: novoItem, novaDuimp: novaDuimp, ratear: ratear, derivados: derivados, montarPayload: montarPayload,
-    validar: validar, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
+    validar: validar, pendencias: pendencias, exemploDuimp: exemploDuimp, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
     exportar: exportar, importar: importar, exigeAliquotasNominais: exigeAliquotasNominais, anoDe: anoDe, cepLimpo: cepLimpo, fmtCep: fmtCep, fmtCnpj: fmtCnpj,
     normalizarBrasilApiCnpj: normalizarBrasilApiCnpj, normalizarViaCep: normalizarViaCep, CSV_CAMPOS: CSV_CAMPOS
   };
@@ -490,8 +505,10 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   var RP = null;                  // resposta interpretada
   var RW = null;                  // aviso de dados simulados
   var PAYLOAD = null;             // último payload enviado
-  var REF = { ufs: [], cst: [], cc: [], cstIS: [], ccIS: [], fund: [], versao: null, dataRef: null };
+  var REF = { mun: [], ufs: [], cst: [], cc: [], cstIS: [], ccIS: [], fund: [], versao: null, dataRef: null };
   var VERSAO_API = null;
+  var PEND = [];
+  var UFS_FALLBACK = 'AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' ');
 
   /* ---------- utilidades ---------- */
   function $(s, r) { return (r || document).querySelector(s); }
@@ -583,8 +600,9 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     if (v) carregarMunicipios(v);
   }
   function carregarMunicipios(uf) {
-    if (!uf) { $('#dl-mun').innerHTML = ''; return Promise.resolve(); }
+    if (!uf) { REF.mun = []; $('#dl-mun').innerHTML = ''; return Promise.resolve(); }
     return lista('/calculadora/dados-abertos/ufs/municipios', { siglaUf: uf }).then(function (m) {
+      REF.mun = m;
       dl('dl-mun', m, function (x) { return x.codigo + ' · ' + x.nome; });
     }).catch(function (e) { toast(e.message, 'err'); });
   }
@@ -607,6 +625,12 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       (extra.list ? ' list="' + extra.list + '"' : '') + (extra.ph ? ' placeholder="' + esc(extra.ph) + '"' : '') + (extra.inputmode ? ' inputmode="' + extra.inputmode + '"' : '') + '></label>';
   }
 
+  function ufOptions() {
+    var lista = REF.ufs.length ? REF.ufs.map(function (u) { return { sigla: u.sigla, nome: u.sigla + ' — ' + u.nome }; })
+      : UFS_FALLBACK.map(function (u) { return { sigla: u, nome: u }; });
+    return '<option value="">—</option>' + lista.map(function (u) { return '<option value="' + esc(u.sigla) + '"' + (u.sigla === S.uf ? ' selected' : '') + '>' + esc(u.nome) + '</option>'; }).join('');
+  }
+  function semAcento(x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
   function pessoaHTML(k) {
     var rot = k === 'importador' ? 'importador' : 'adquirente/encomendante';
     return '<div class="row">' + fld('CNPJ/CPF do ' + rot, k + '.cnpj', { inputmode: 'numeric' }) +
@@ -690,8 +714,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       '<section class="card"><h3>Local da operação de consumo (CBS/IBS)</h3>' +
       '<p class="hint">Campos exigidos pelo Portal Único em Item &gt; Mercadoria para fins de CBS e IBS.</p>' +
       '<div class="row">' + fld('CEP do local de consumo (preenche UF e município)', 'destinoCep', { inputmode: 'numeric', cls: 'w2' }) + '<button class="btn sm self" data-act="lookCep" data-who="destino" type="button">Buscar CEP</button></div><div class="msg" id="msg-destino"></div><div class="row">' +
-      '<label class="f"><span>UF</span><select id="uf" data-b="uf"><option value="">—</option></select></label>' +
-      '<label class="f w2"><span>Município (código IBGE · nome)</span><input id="munInp" list="dl-mun" value="' + esc(d.municipio ? d.municipio + (d.municipioNome ? ' · ' + d.municipioNome : '') : '') + '" placeholder="digite para buscar"></label></div>' +
+      '<label class="f"><span>UF</span><select id="uf" data-b="uf">' + ufOptions() + '</select></label>' +
+      '<label class="f w2"><span>Município (código IBGE · nome)</span><input id="munInp" list="dl-mun" value="' + esc(d.municipio ? d.municipio + (d.municipioNome ? ' · ' + d.municipioNome : '') : '') + '" placeholder="código IBGE (7 dígitos) ou nome"></label></div>' +
       '<div class="row"><button class="btn sm" id="btnAliq" type="button">Buscar alíquotas de referência</button><span class="hint" id="aliqMsg"></span></div>' +
       '<div class="row">' + fld('CBS nominal (%)', 'aliq.cbs', { inputmode: 'decimal' }) + fld('IBS estadual (%)', 'aliq.ibsUf', { inputmode: 'decimal' }) + fld('IBS municipal (%)', 'aliq.ibsMun', { inputmode: 'decimal' }) + '</div>' +
       '<p class="hint">As alíquotas nominais só são enviadas à API para fatos geradores a partir de 01/01/2027 (a API as proíbe antes).</p>' +
@@ -852,15 +876,28 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
 
   function renderAll() { renderIdent(); renderItens(); renderCalculo(); renderGuias(); renderIO(); atualizarErros(); }
   function atualizarErros() {
-    var e = C.validar(S), el = $('#erros');
-    el.innerHTML = e.length ? '<b>' + e.length + ' pendência(s):</b> ' + e.slice(0, 4).map(esc).join(' · ') + (e.length > 4 ? ' · …' : '') : '<span class="okmsg">Sem pendências de preenchimento.</span>';
-    el.className = 'erros' + (e.length ? '' : ' ok');
+    var e = C.pendencias(S), el = $('#erros'); PEND = e;
+    if (!e.length) { el.className = 'erros ok'; el.innerHTML = '<span class="okmsg">Pronto para calcular: sem pendências de preenchimento.</span>'; return; }
+    el.className = 'erros';
+    el.innerHTML = '<b>Para calcular, falta preencher ' + e.length + ' campo(s):</b> ' +
+      e.slice(0, 8).map(function (x, i) { return '<button type="button" class="lnk go" data-goto="' + i + '">' + esc(x.msg.replace(/\.$/, '')) + '</button>'; }).join(' · ') +
+      (e.length > 8 ? ' · …' : '') + ' <button type="button" class="btn sm" data-act="exemplo">Carregar exemplo fictício</button>';
+  }
+  function irPara(x) {
+    if (!x) return;
+    trocarAba(x.tab);
+    if (x.item !== null && x.item !== undefined) { openItem = x.item; renderItens(); }
+    setTimeout(function () { var el = $(x.sel); if (el) { el.classList.add('inv'); if (el.scrollIntoView) el.scrollIntoView({ block: 'center' }); el.focus(); } }, 30);
   }
 
   /* ---------- ações ---------- */
   function calcular() {
-    var errs = C.validar(S);
-    if (errs.length) { toast(errs[0] + (errs.length > 1 ? ' (+' + (errs.length - 1) + ')' : ''), 'err'); atualizarErros(); return; }
+    var pe = C.pendencias(S);
+    if (pe.length) {
+      toast(pe[0].msg + (pe.length > 1 ? ' (+' + (pe.length - 1) + ')' : ''), 'err'); atualizarErros();
+      pe.forEach(function (x) { var el = $(x.sel); if (el) el.classList.add('inv'); });
+      irPara(pe[0]); return;
+    }
     var btn = $('#btnCalc'), msg = $('#calcMsg'); btn.disabled = true; msg.textContent = 'calculando… (a primeira chamada pode demorar se a instância estiver dormindo)';
     PAYLOAD = C.montarPayload(S);
     apiFetch('/calculadora/regime-geral', null, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(PAYLOAD) })
@@ -896,6 +933,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   /* ---------- eventos ---------- */
   function onInput(ev) {
     var t = ev.target;
+    if (t.classList) t.classList.remove('inv');
     if (t.dataset.b) {
       var v = t.type === 'checkbox' ? t.checked : t.value;
       setPath(S, t.dataset.b, v);
@@ -913,8 +951,15 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     }
     if (t.id === 'munInp') {
       var cod = codigoDe(t.value);
-      if (/^\d{7}$/.test(cod)) { S.municipio = cod; S.municipioNome = t.value.split('·').slice(1).join('·').trim(); }
-      else S.municipio = '';
+      if (/^\d{7}$/.test(cod)) {
+        S.municipio = cod;
+        var porCod = REF.mun.filter(function (x) { return String(x.codigo) === cod; })[0];
+        S.municipioNome = t.value.indexOf('·') >= 0 ? t.value.split('·').slice(1).join('·').trim() : (porCod ? porCod.nome : '');
+      } else {
+        var alvo = semAcento(t.value), achou = REF.mun.filter(function (x) { return semAcento(x.nome) === alvo; });
+        if (achou.length === 1) { S.municipio = String(achou[0].codigo); S.municipioNome = achou[0].nome; }
+        else S.municipio = '';
+      }
       atualizarErros(); salvarDeb(); return;
     }
     if (t.dataset.i !== undefined && t.dataset.f) {
@@ -937,12 +982,14 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   function onClick(ev) {
     var t = ev.target.closest('button,[data-act],[data-print]'); if (!t) return;
     if (t.dataset.print) return imprimir(t.dataset.print);
+    if (t.dataset.goto !== undefined) return irPara(PEND[parseInt(t.dataset.goto, 10)]);
     var i = parseInt(t.dataset.i, 10);
     switch (t.dataset.act || t.id) {
       case 'btnAddItem': var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); S.itens.push(C.novoItem(max + 1)); openItem = S.itens.length - 1; renderItens(); salvarRascunho(); atualizarErros(); break;
       case 'dup': var c = JSON.parse(JSON.stringify(S.itens[i])); c.numero = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0) + 1; S.itens.splice(i + 1, 0, c); openItem = i + 1; renderItens(); salvarRascunho(); atualizarErros(); break;
       case 'del': if (S.itens.length > 1) { S.itens.splice(i, 1); openItem = -1; renderItens(); salvarRascunho(); atualizarErros(); } else toast('A DUIMP precisa de ao menos um item.', 'err'); break;
       case 'ncm': verificarNcm(i); break;
+      case 'exemplo': S = C.exemploDuimp(); R = RP = RW = PAYLOAD = null; openItem = 0; salvarRascunho(); renderAll(); carregarMunicipios(S.uf); carregarTabelas(); toast('Exemplo fictício carregado: confira os campos e clique em Calcular (aba 3).'); break;
       case 'lookCnpj': buscarCnpj(t.dataset.who); break;
       case 'lookCep': buscarCep(t.dataset.who); break;
       case 'btnCalc': calcular(); break;
