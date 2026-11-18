@@ -1,1 +1,886 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DUIMP · Reforma Tributária (CBS, IBS e IS)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mut:#5b6675;--line:#d9dee6;--pri:#0b4f8a;--pri2:#e8f1fa;--ok:#12703a;--okbg:#e6f4ec;--bad:#a4262c;--badbg:#fbeaea;--warn:#7a5200;--warnbg:#fff5da}
+@media (prefers-color-scheme:dark){:root{--bg:#10151c;--card:#171e28;--ink:#e6ebf2;--mut:#9aa7b8;--line:#2b3646;--pri:#6db3f2;--pri2:#16283b;--ok:#6fd49a;--okbg:#12261b;--bad:#ff8f94;--badbg:#2e1719;--warn:#f0c96a;--warnbg:#2c2410}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header.top{background:var(--card);border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header.top h1{font-size:16px;margin:0;font-weight:650}header.top h1 small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.api{display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap}.api input{width:300px}
+main{max-width:1180px;margin:0 auto;padding:16px 20px 60px}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:9px 14px;cursor:pointer;color:var(--mut);font:inherit;border-bottom:2px solid transparent}.tab.on{color:var(--pri);border-color:var(--pri);font-weight:600}
+.pane{display:none}.pane.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}.card h3{margin:0 0 8px;font-size:14px}
+h4{margin:14px 0 6px;font-size:13px;color:var(--mut);font-weight:600}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0;align-items:flex-end}.row.sub{margin-left:18px;padding-left:10px;border-left:2px solid var(--line)}
+.f{display:flex;flex-direction:column;gap:3px;flex:1 1 150px;min-width:120px}.f.w2{flex:2 1 260px}.f.w3{flex:3 1 380px}.f>span{font-size:12px;color:var(--mut)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 8px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--pri);outline-offset:-1px}
+input[type=checkbox]{width:auto}.chk{display:flex;gap:8px;align-items:center;margin:10px 0 4px;font-size:13px}
+.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer}.btn:hover{border-color:var(--pri)}
+.btn.primary{background:var(--pri);border-color:var(--pri);color:#fff}[data-theme] .btn.primary{color:#fff}@media (prefers-color-scheme:dark){.btn.primary{color:#0a1118}}
+.btn.sm{padding:5px 10px;font-size:12px}.btn.danger{color:var(--bad)}.btn:disabled{opacity:.55;cursor:wait}.self{align-self:flex-end}
+.lnk{background:none;border:0;color:var(--pri);cursor:pointer;font:inherit;font-size:12px;padding:0 6px}.lnk.danger{color:var(--bad)}
+.bar{display:flex;gap:10px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+.hint{color:var(--mut);font-size:12px;margin:4px 0}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--mut)}.pill.ok{color:var(--ok);background:var(--okbg);border-color:transparent}.pill.bad{color:var(--bad);background:var(--badbg);border-color:transparent}
+details.item{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+details.item>summary{cursor:pointer;display:flex;gap:10px;align-items:center}.item .sum{color:var(--mut);font-size:12px;flex:1}.item .acts{margin-left:auto}
+.der{font-size:12px;color:var(--mut);background:var(--pri2);border-radius:6px;padding:6px 10px;margin:6px 0}
+.msg{font-size:12px;color:var(--mut);margin:2px 0}.okmsg{color:var(--ok)}
+.aviso{background:var(--warnbg);color:var(--warn);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:10px 0}.aviso.err{background:var(--badbg);color:var(--bad)}
+.tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tot div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tot span{display:block;font-size:12px;color:var(--mut)}.tot b{font-size:16px}
+.tblw{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{background:var(--pri2);font-weight:600}.r{text-align:right;font-variant-numeric:tabular-nums}tfoot td{font-weight:700}
+.mem{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0}.mem summary{cursor:pointer}.pre,pre{white-space:pre-wrap;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}pre{max-height:380px;overflow:auto;background:var(--bg);padding:8px;border-radius:6px}
+.erros{margin:0 0 12px;padding:8px 12px;border-radius:8px;background:var(--badbg);color:var(--bad);font-size:13px}.erros.ok{background:var(--okbg);color:var(--ok)}
+.preview{background:#fff;color:#111;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-top:14px}.preview table,.preview th,.preview td{color:#111}.preview th{background:#eef2f7}
+.gh{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.gh h2{margin:0;font-size:17px}.gh p{margin:4px 0 0;font-size:12px;color:#444}.gm{font-size:11px;text-align:right;color:#444}
+.kv th{width:18%;background:#f4f6f9}.fine{font-size:11px;color:#444}.warn{background:#fff5da;border:1px solid #e5cf8a;padding:6px 10px;font-size:12px;color:#5b4300}
+.toast{position:fixed;bottom:18px;left:50%;transform:translate(-50%,20px);background:#222;color:#fff;padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:.2s;max-width:90vw;z-index:20}.toast.show{opacity:1;transform:translate(-50%,0)}.toast.err{background:#a4262c}
+footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-size:12px}
+#printArea{display:none}
+@media print{body.printing>*:not(#printArea){display:none!important}body.printing #printArea{display:block}body{background:#fff;color:#111}#printArea table{font-size:11px}@page{margin:14mm}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>DUIMP · Reforma Tributária<small>Preenchimento orientado, cálculo de CBS/IBS/IS pela API da Receita Federal, importação, exportação e guias</small></h1>
+  <div class="api"><span class="pill" id="apiStatus">API não consultada</span><input id="apiUrl" aria-label="Endereço da API" spellcheck="false"><button class="btn sm" id="btnApi" type="button">Conectar</button></div>
+</header>
+<main>
+  <div class="erros" id="erros"></div>
+  <nav class="tabs">
+    <button class="tab on" data-tab="ident" type="button">1 · Identificação</button>
+    <button class="tab" data-tab="itens" type="button">2 · Itens</button>
+    <button class="tab" data-tab="calc" type="button">3 · Cálculo</button>
+    <button class="tab" data-tab="guias" type="button">4 · Guias</button>
+    <button class="tab" data-tab="io" type="button">Importar / Exportar</button>
+  </nav>
+  <div class="hint" id="refStatus">tabelas oficiais não carregadas</div>
+  <section class="pane on" id="tab-ident"></section>
+  <section class="pane" id="tab-itens"></section>
+  <section class="pane" id="tab-calc"></section>
+  <section class="pane" id="tab-guias"></section>
+  <section class="pane" id="tab-io"></section>
+</main>
+<footer>Ferramenta auxiliar. Não registra a DUIMP no Portal Único Siscomex nem emite guia de pagamento. Os campos seguem a estrutura de preenchimento descrita pela Receita Federal e pelo Manual Anvisa, mas não reproduzem o leiaute oficial da Duimp (Ato Técnico Conjunto RFB/Suana/CGIBS nº 11). Confirme valores e regras na fonte oficial antes de uso profissional.</footer>
+<datalist id="dl-cst"></datalist><datalist id="dl-cc"></datalist><datalist id="dl-cst-is"></datalist><datalist id="dl-cc-is"></datalist><datalist id="dl-fund"></datalist><datalist id="dl-mun"></datalist>
+<div id="printArea"></div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+/* Núcleo da ferramenta DUIMP · Reforma Tributária.
+ * Funções puras (sem DOM, sem rede): rateio, montagem do payload da API,
+ * validação, CSV, importação/exportação e leitura da resposta. */
+(function (root) {
+  'use strict';
 
+  var FORMATO = 'duimp-rtc';
+  var VERSAO_FORMATO = 1;
+
+  /* ---------- números e formatação ---------- */
+  function num(v) {
+    if (v === null || v === undefined || v === '') return 0;
+    if (typeof v === 'number') return isFinite(v) ? v : 0;
+    var s = String(v).trim().replace(/\s/g, '').replace(/^R\$/, '');
+    if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+    var n = parseFloat(s);
+    return isFinite(n) ? n : 0;
+  }
+  function r2(x) { return Math.round((x + Number.EPSILON) * 100) / 100; }
+  function brl(x) {
+    return (x === null || x === undefined || x === '') ? '' :
+      Number(x).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function onlyDigits(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
+
+  /* ---------- CNPJ / CPF ---------- */
+  function cnpjValido(v) {
+    var c = onlyDigits(v);
+    if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false;
+    function dv(base) {
+      var pesos = base.length === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+      var s = 0;
+      for (var i = 0; i < base.length; i++) s += parseInt(base[i], 10) * pesos[i];
+      var r = s % 11;
+      return r < 2 ? 0 : 11 - r;
+    }
+    var d1 = dv(c.slice(0, 12));
+    var d2 = dv(c.slice(0, 12) + d1);
+    return c[12] === String(d1) && c[13] === String(d2);
+  }
+  function cpfValido(v) {
+    var c = onlyDigits(v);
+    if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+    function dv(n) {
+      var s = 0;
+      for (var i = 0; i < n; i++) s += parseInt(c[i], 10) * (n + 1 - i);
+      var r = (s * 10) % 11;
+      return r === 10 ? 0 : r;
+    }
+    return dv(9) === parseInt(c[9], 10) && dv(10) === parseInt(c[10], 10);
+  }
+  function docValido(v) {
+    var c = onlyDigits(v);
+    return c.length === 14 ? cnpjValido(c) : c.length === 11 ? cpfValido(c) : false;
+  }
+
+  /* ---------- modelo ---------- */
+  function novoItem(n) {
+    return {
+      numero: n || 1, descricao: '', ncm: '', nbs: '', qtd: 1, unidade: 'UN', pesoLiq: 0,
+      vMerc: 0, ii: 0, ipi: 0, pis: 0, cofins: 0, icms: 0, outrasTaxas: 0,
+      fundamento: '', cst: '', cClassTrib: '',
+      modoBase: 'componentes', baseManual: 0,
+      is: { ativo: false, cst: '', cClassTrib: '', bc: '', qtd: '', unidade: '', valor: 0 },
+      tribReg: { ativo: false, cst: '', cClassTrib: '' }
+    };
+  }
+  function novaDuimp() {
+    var hoje = new Date();
+    var d = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
+    return {
+      numeroDuimp: '', dataRegistro: d, observacoes: '',
+      importador: { cnpj: '', nome: '' },
+      caracterizacao: 'direta', adquirente: { cnpj: '', nome: '' },
+      modal: 'maritimo', recinto: '', urf: '', paisProc: '',
+      moeda: 'USD', cambio: 1, incoterm: '', freteMoeda: 0, seguroMoeda: 0, criterioRateio: 'valor',
+      uf: '', municipio: '', municipioNome: '',
+      aliq: { cbs: '', ibsUf: '', ibsMun: '' },
+      anvisa: { ativo: false, categoria: '', finalidade: '', assuntoPrimario: '', assuntoSecundario: '',
+                cnpjDetentor: '', cnpjRecinto: '', art23p6: 'nao', priorizacao: '' },
+      itens: [novoItem(1)]
+    };
+  }
+
+  /* ---------- rateio ---------- */
+  /* Distribui "total" proporcionalmente a "pesos", fechando os centavos no último item. */
+  function ratear(total, pesos) {
+    var n = pesos.length, out = [], soma = 0, i;
+    for (i = 0; i < n; i++) soma += pesos[i];
+    if (n === 0) return out;
+    var acum = 0;
+    for (i = 0; i < n; i++) {
+      var v = (i === n - 1) ? r2(total - acum) :
+        r2(soma > 0 ? total * pesos[i] / soma : total / n);
+      out.push(v); acum = r2(acum + v);
+    }
+    return out;
+  }
+
+  /* Valores derivados por item, em BRL. */
+  function derivados(d) {
+    var cambio = num(d.cambio) || 1;
+    var vMercBRL = d.itens.map(function (it) { return r2(num(it.vMerc) * cambio); });
+    var base = d.criterioRateio === 'peso' ? d.itens.map(function (it) { return num(it.pesoLiq); }) : vMercBRL;
+    var somaBase = base.reduce(function (a, b) { return a + b; }, 0);
+    if (somaBase === 0) base = vMercBRL; // peso zerado: cai no valor
+    var frete = ratear(r2(num(d.freteMoeda) * cambio), base);
+    var seguro = ratear(r2(num(d.seguroMoeda) * cambio), base);
+    return d.itens.map(function (it, i) {
+      var vAdu = r2(vMercBRL[i] + frete[i] + seguro[i]);
+      return { vMercBRL: vMercBRL[i], frete: frete[i], seguro: seguro[i], valorAduaneiro: vAdu };
+    });
+  }
+
+  /* ---------- payload da API (OperacaoInput) ---------- */
+  function gerarId() {
+    var s = '', i;
+    var c = (typeof crypto !== 'undefined' && crypto.getRandomValues) ? crypto : null;
+    if (c) { var a = new Uint8Array(16); c.getRandomValues(a); for (i = 0; i < 16; i++) s += ('0' + a[i].toString(16)).slice(-2); }
+    else for (i = 0; i < 32; i++) s += Math.floor(Math.random() * 16).toString(16);
+    return s;
+  }
+  function anoDe(d) { return parseInt(String(d.dataRegistro).slice(0, 4), 10); }
+  function exigeAliquotasNominais(d) { return String(d.dataRegistro) >= '2027-01-01'; }
+
+  function montarPayload(d, opts) {
+    opts = opts || {};
+    var der = derivados(d);
+    var p = {
+      id: opts.id || gerarId(),
+      versao: '0.0.1',
+      dhFatoGerador: d.dataRegistro + 'T12:00:00-03:00',
+      municipio: parseInt(d.municipio, 10),
+      uf: d.uf,
+      itens: []
+    };
+    if (exigeAliquotasNominais(d)) {
+      p.aliquotasNominais = {
+        cbs: num(d.aliq.cbs), ibsEstadual: num(d.aliq.ibsUf), ibsMunicipal: num(d.aliq.ibsMun)
+      };
+    }
+    d.itens.forEach(function (it, i) {
+      var x = der[i];
+      var o = { numero: parseInt(it.numero, 10) || (i + 1) };
+      if (it.ncm) o.ncm = onlyDigits(it.ncm);
+      if (it.nbs) o.nbs = onlyDigits(it.nbs);
+      o.cst = onlyDigits(it.cst);
+      o.cClassTrib = onlyDigits(it.cClassTrib);
+      if (num(it.qtd) > 0) o.quantidade = num(it.qtd);
+      if (it.unidade) o.unidade = it.unidade;
+
+      if (it.is && it.is.ativo) {
+        // Regra da API: com Imposto Seletivo e sem gComponentesBC, BC(CBS/IBS) = BC(IS) + IS.
+        var bcIS = it.is.bc !== '' && it.is.bc != null ? num(it.is.bc) : r2(x.valorAduaneiro + num(it.ii));
+        var vIS = num(it.is.valor);
+        var is = { cst: onlyDigits(it.is.cst), cClassTrib: onlyDigits(it.is.cClassTrib), baseCalculo: bcIS };
+        if (num(it.is.qtd) > 0) is.quantidade = num(it.is.qtd);
+        if (it.is.unidade) is.unidade = it.is.unidade;
+        if (vIS > 0) is.impostoInformado = vIS;
+        o.impostoSeletivo = is;
+        o.baseCalculo = r2(bcIS + vIS);
+      } else if (it.modoBase === 'manual') {
+        o.baseCalculo = r2(num(it.baseManual));
+      } else {
+        var g = { vProd: x.vMercBRL };
+        if (x.frete > 0) g.vFrete = x.frete;
+        if (x.seguro > 0) g.vSeg = x.seguro;
+        var outros = r2(num(it.outrasTaxas) + num(it.ipi)); // a API não tem componente próprio para IPI
+        if (outros > 0) g.vOutro = outros;
+        if (num(it.ii) > 0) g.vII = r2(num(it.ii));
+        if (num(it.pis) > 0) g.vPIS = r2(num(it.pis));
+        if (num(it.cofins) > 0) g.vCOFINS = r2(num(it.cofins));
+        if (num(it.icms) > 0) g.vICMS = r2(num(it.icms));
+        o.gComponentesBC = g;
+      }
+      if (it.tribReg && it.tribReg.ativo) {
+        o.tributacaoRegular = { cst: onlyDigits(it.tribReg.cst), cClassTrib: onlyDigits(it.tribReg.cClassTrib) };
+      }
+      p.itens.push(o);
+    });
+    return p;
+  }
+
+  /* ---------- validação ---------- */
+  function validar(d) {
+    var e = [];
+    if (!docValido(d.importador.cnpj)) e.push('Importador: CNPJ/CPF ausente ou inválido.');
+    if (d.caracterizacao !== 'direta' && !docValido(d.adquirente.cnpj))
+      e.push('Adquirente/encomendante: CNPJ/CPF ausente ou inválido.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.dataRegistro || '')) e.push('Data de registro (fato gerador) inválida.');
+    if (!d.uf || d.uf.length !== 2) e.push('UF do local da operação de consumo não informada.');
+    if (!/^\d{7}$/.test(String(d.municipio || ''))) e.push('Município do local da operação de consumo não informado (código IBGE de 7 dígitos).');
+    if (num(d.cambio) <= 0) e.push('Taxa de câmbio deve ser maior que zero.');
+    if (exigeAliquotasNominais(d) && !(String(d.aliq.cbs) !== '' && String(d.aliq.ibsUf) !== '' && String(d.aliq.ibsMun) !== ''))
+      e.push('Para fatos geradores a partir de 01/01/2027, informe as alíquotas nominais (CBS, IBS estadual, IBS municipal).');
+    if (!d.itens.length) e.push('A DUIMP precisa de ao menos um item.');
+    var vistos = {};
+    d.itens.forEach(function (it, i) {
+      var n = 'Item ' + (it.numero || i + 1) + ': ';
+      if (vistos[it.numero]) e.push(n + 'número de item repetido.'); vistos[it.numero] = true;
+      if (onlyDigits(it.ncm).length !== 8) e.push(n + 'NCM deve ter 8 dígitos.');
+      if (!/^\d{3}$/.test(onlyDigits(it.cst))) e.push(n + 'CST (3 dígitos) não informado.');
+      if (!/^\d{6}$/.test(onlyDigits(it.cClassTrib))) e.push(n + 'cClassTrib (6 dígitos) não informado.');
+      if (num(it.vMerc) <= 0 && !(it.modoBase === 'manual' && num(it.baseManual) > 0)) e.push(n + 'valor da mercadoria não informado.');
+      if (it.is && it.is.ativo) {
+        if (!/^\d{3}$/.test(onlyDigits(it.is.cst)) || !/^\d{6}$/.test(onlyDigits(it.is.cClassTrib)))
+          e.push(n + 'Imposto Seletivo: CST e cClassTrib do IS são obrigatórios.');
+      }
+      if (it.tribReg && it.tribReg.ativo &&
+          (!/^\d{3}$/.test(onlyDigits(it.tribReg.cst)) || !/^\d{6}$/.test(onlyDigits(it.tribReg.cClassTrib))))
+        e.push(n + 'Tributação regular: CST e cClassTrib são obrigatórios.');
+    });
+    if (d.anvisa && d.anvisa.ativo) {
+      if (!d.anvisa.assuntoPrimario) e.push('Guia Anvisa: código de assunto de petição primária não informado.');
+      if (d.anvisa.cnpjDetentor && !cnpjValido(d.anvisa.cnpjDetentor)) e.push('Guia Anvisa: CNPJ do detentor da regularização inválido.');
+      if (d.anvisa.cnpjRecinto && !cnpjValido(d.anvisa.cnpjRecinto)) e.push('Guia Anvisa: CNPJ do recinto armazenador inválido.');
+    }
+    return e;
+  }
+
+  /* ---------- resposta da API ---------- */
+  function get(o, path) {
+    var p = path.split('.'), c = o;
+    for (var i = 0; i < p.length; i++) { if (c == null) return undefined; c = c[p[i]]; }
+    return c;
+  }
+  function n0(x) { return x == null ? 0 : Number(x); }
+
+  function lerResposta(roc) {
+    var linhas = (roc && roc.objetos || []).map(function (ob) {
+      var g = get(ob, 'tribCalc.IBSCBS.gIBSCBS') || {};
+      var is = get(ob, 'tribCalc.IS') || null;
+      return {
+        nObj: ob.nObj,
+        simulado: !!ob.calculoSimulado,
+        cst: get(ob, 'tribCalc.IBSCBS.CST'), cClassTrib: get(ob, 'tribCalc.IBSCBS.cClassTrib'),
+        vBC: n0(g.vBC),
+        pCBS: get(g, 'gCBS.pCBS'), vCBS: n0(get(g, 'gCBS.vCBS')),
+        pIBSUF: get(g, 'gIBSUF.pIBSUF'), vIBSUF: n0(get(g, 'gIBSUF.vIBSUF')),
+        pIBSMun: get(g, 'gIBSMun.pIBSMun'), vIBSMun: n0(get(g, 'gIBSMun.vIBSMun')),
+        vIBS: n0(g.vIBS),
+        redCBS: get(g, 'gCBS.gRed.pRedAliq'), redIBSUF: get(g, 'gIBSUF.gRed.pRedAliq'), redIBSMun: get(g, 'gIBSMun.gRed.pRedAliq'),
+        vIS: is ? n0(is.vIS) : 0,
+        memoria: {
+          CBS: get(g, 'gCBS.memoriaCalculo'), IBSUF: get(g, 'gIBSUF.memoriaCalculo'),
+          IBSMun: get(g, 'gIBSMun.memoriaCalculo'), IS: is ? is.memoriaCalculo : undefined
+        },
+        tribReg: g.gTribRegular || null
+      };
+    });
+    var soma = function (k) { return r2(linhas.reduce(function (a, l) { return a + (l[k] || 0); }, 0)); };
+    var calc = { vBC: soma('vBC'), vCBS: soma('vCBS'), vIBSUF: soma('vIBSUF'), vIBSMun: soma('vIBSMun'), vIBS: soma('vIBS'), vIS: soma('vIS') };
+    return { linhas: linhas, totais: calc, totaisApi: get(roc, 'total.tribCalc') || null };
+  }
+
+  /* ---------- CSV de itens (separador ;) ---------- */
+  var CSV_CAMPOS = ['numero', 'descricao', 'ncm', 'nbs', 'qtd', 'unidade', 'pesoLiq', 'vMerc', 'ii', 'ipi', 'pis', 'cofins', 'icms',
+                    'outrasTaxas', 'cst', 'cClassTrib', 'is_cst', 'is_cClassTrib', 'is_bc', 'is_qtd', 'is_unidade', 'is_valor'];
+  function csvEsc(v) {
+    var s = v == null ? '' : String(v);
+    return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function itensParaCSV(itens) {
+    var linhas = [CSV_CAMPOS.join(';')];
+    itens.forEach(function (it) {
+      var is = (it.is && it.is.ativo) ? it.is : {}; // IS desativado não vai para o CSV
+      var m = { is_cst: is.cst, is_cClassTrib: is.cClassTrib, is_bc: is.bc, is_qtd: is.qtd, is_unidade: is.unidade, is_valor: is.valor };
+      linhas.push(CSV_CAMPOS.map(function (c) { return csvEsc(c.indexOf('is_') === 0 ? m[c] : it[c]); }).join(';'));
+    });
+    return linhas.join('\r\n');
+  }
+  function parseCSV(txt) {
+    var rows = [], row = [], cur = '', q = false, i, ch;
+    txt = txt.replace(/^﻿/, '');
+    for (i = 0; i < txt.length; i++) {
+      ch = txt[i];
+      if (q) {
+        if (ch === '"') { if (txt[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ';') { row.push(cur); cur = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && txt[i + 1] === '\n') i++;
+        row.push(cur); cur = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = [];
+      } else cur += ch;
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+  function csvParaItens(txt) {
+    var rows = parseCSV(txt);
+    if (rows.length < 2) throw new Error('CSV sem linhas de dados.');
+    var cab = rows[0].map(function (h) { return h.trim(); });
+    if (cab.indexOf('ncm') < 0) throw new Error('CSV sem a coluna "ncm". Use o modelo exportado pela ferramenta (separador ";").');
+    return rows.slice(1).map(function (r, idx) {
+      var o = {};
+      cab.forEach(function (h, i) { o[h] = r[i] == null ? '' : r[i]; });
+      var it = novoItem(idx + 1);
+      it.numero = parseInt(o.numero, 10) || (idx + 1);
+      ['descricao', 'ncm', 'nbs', 'unidade', 'cst', 'cClassTrib'].forEach(function (k) { if (o[k] !== undefined) it[k] = o[k].trim(); });
+      ['qtd', 'pesoLiq', 'vMerc', 'ii', 'ipi', 'pis', 'cofins', 'icms', 'outrasTaxas'].forEach(function (k) { if (o[k] !== undefined && o[k] !== '') it[k] = num(o[k]); });
+      if (o.is_cst || o.is_cClassTrib) {
+        it.is = { ativo: true, cst: (o.is_cst || '').trim(), cClassTrib: (o.is_cClassTrib || '').trim(),
+                  bc: o.is_bc === '' ? '' : num(o.is_bc), qtd: o.is_qtd === '' ? '' : num(o.is_qtd),
+                  unidade: (o.is_unidade || '').trim(), valor: num(o.is_valor) };
+      }
+      return it;
+    });
+  }
+
+  /* ---------- importação / exportação ---------- */
+  function exportar(d) {
+    return { formato: FORMATO, versaoFormato: VERSAO_FORMATO, geradoEm: new Date().toISOString(), duimp: JSON.parse(JSON.stringify(d)) };
+  }
+  function mesclar(base, ext) {
+    Object.keys(ext || {}).forEach(function (k) {
+      if (base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) && ext[k] && typeof ext[k] === 'object') mesclar(base[k], ext[k]);
+      else base[k] = ext[k];
+    });
+    return base;
+  }
+  function importar(obj) {
+    if (!obj || typeof obj !== 'object') throw new Error('Arquivo inválido.');
+    var d = novaDuimp();
+    if (obj.formato === FORMATO && obj.duimp) {
+      mesclar(d, obj.duimp);
+      d.itens = (obj.duimp.itens || []).map(function (it, i) { return mesclar(novoItem(i + 1), it); });
+      if (!d.itens.length) d.itens = [novoItem(1)];
+      return { duimp: d, origem: 'duimp-rtc' };
+    }
+    // Aceita também o payload da própria API (OperacaoInput), útil para reaproveitar exemplos da Receita.
+    if (Array.isArray(obj.itens) && (obj.municipio !== undefined || obj.uf !== undefined)) {
+      d.uf = obj.uf || ''; d.municipio = obj.municipio ? String(obj.municipio) : '';
+      if (obj.dhFatoGerador) d.dataRegistro = String(obj.dhFatoGerador).slice(0, 10);
+      if (obj.aliquotasNominais) d.aliq = { cbs: obj.aliquotasNominais.cbs, ibsUf: obj.aliquotasNominais.ibsEstadual, ibsMun: obj.aliquotasNominais.ibsMunicipal };
+      d.cambio = 1; d.moeda = 'BRL';
+      d.itens = obj.itens.map(function (src, i) {
+        var it = novoItem(i + 1), g = src.gComponentesBC;
+        it.numero = src.numero || i + 1; it.ncm = src.ncm || ''; it.nbs = src.nbs || '';
+        it.cst = src.cst || ''; it.cClassTrib = src.cClassTrib || '';
+        it.qtd = src.quantidade != null ? src.quantidade : 1; it.unidade = src.unidade || 'UN';
+        if (g) {
+          it.vMerc = n0(g.vProd); it.ii = n0(g.vII); it.pis = n0(g.vPIS); it.cofins = n0(g.vCOFINS); it.icms = n0(g.vICMS);
+          it.outrasTaxas = n0(g.vOutro);
+          // frete e seguro ficam embutidos no valor da mercadoria para não se perder a base original
+          it.vMerc = r2(it.vMerc + n0(g.vFrete) + n0(g.vSeg));
+        } else { it.modoBase = 'manual'; it.baseManual = n0(src.baseCalculo); it.vMerc = n0(src.baseCalculo); }
+        if (src.impostoSeletivo) {
+          var s = src.impostoSeletivo;
+          it.is = { ativo: true, cst: s.cst, cClassTrib: s.cClassTrib, bc: s.baseCalculo, qtd: s.quantidade || '', unidade: s.unidade || '', valor: n0(s.impostoInformado) };
+        }
+        if (src.tributacaoRegular) it.tribReg = { ativo: true, cst: src.tributacaoRegular.cst, cClassTrib: src.tributacaoRegular.cClassTrib };
+        return it;
+      });
+      return { duimp: d, origem: 'payload-api' };
+    }
+    throw new Error('Formato não reconhecido. Use um arquivo exportado por esta ferramenta ou um payload da API de cálculo.');
+  }
+
+  root.DuimpCore = {
+    num: num, r2: r2, brl: brl, onlyDigits: onlyDigits, cnpjValido: cnpjValido, cpfValido: cpfValido, docValido: docValido,
+    novoItem: novoItem, novaDuimp: novaDuimp, ratear: ratear, derivados: derivados, montarPayload: montarPayload,
+    validar: validar, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
+    exportar: exportar, importar: importar, exigeAliquotasNominais: exigeAliquotasNominais, anoDe: anoDe, CSV_CAMPOS: CSV_CAMPOS
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = root.DuimpCore;
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
+
+</script>
+<script>
+/* Interface da ferramenta DUIMP · Reforma Tributária. Depende de DuimpCore (core.js). */
+(function () {
+  'use strict';
+  var C = window.DuimpCore;
+  var RENDER_URL = 'https://calculadora-rtc-api.onrender.com/api';
+  var LS = 'duimp-rtc:rascunho:v1', LS_API = 'duimp-rtc:api';
+
+  var S = C.novaDuimp();          // estado da DUIMP
+  var R = null;                   // última resposta da API (bruta)
+  var RP = null;                  // resposta interpretada
+  var RW = null;                  // aviso de dados simulados
+  var PAYLOAD = null;             // último payload enviado
+  var REF = { ufs: [], cst: [], cc: [], cstIS: [], ccIS: [], fund: [], versao: null, dataRef: null };
+  var VERSAO_API = null;
+
+  /* ---------- utilidades ---------- */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function setPath(o, path, v) { var p = path.split('.'), i; for (i = 0; i < p.length - 1; i++) o = o[p[i]]; o[p[p.length - 1]] = v; }
+  function getPath(o, path) { var p = path.split('.'), i; for (i = 0; i < p.length; i++) { if (o == null) return ''; o = o[p[i]]; } return o == null ? '' : o; }
+  function toast(msg, tipo) {
+    var t = $('#toast'); t.textContent = msg; t.className = 'toast show ' + (tipo || '');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.className = 'toast'; }, tipo === 'err' ? 9000 : 4000);
+  }
+  function download(nome, txt, tipo) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: tipo || 'application/json' }));
+    a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function salvarRascunho() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* armazenamento indisponível */ } }
+  function lerRascunho() { try { var s = localStorage.getItem(LS); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  var salvarDeb = (function () { var t; return function () { clearTimeout(t); t = setTimeout(salvarRascunho, 400); }; })();
+
+  /* ---------- API ---------- */
+  function apiBase() { return ($('#apiUrl').value || '').replace(/\/+$/, ''); }
+  function apiFetch(path, params, opts) {
+    var url = apiBase() + path;
+    if (params) {
+      var q = Object.keys(params).filter(function (k) { return params[k] !== undefined && params[k] !== ''; })
+        .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      if (q) url += '?' + q;
+    }
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 90000);
+    opts = opts || {}; opts.signal = ctl.signal;
+    opts.headers = Object.assign({ 'Accept': 'application/json' }, opts.headers || {});
+    return fetch(url, opts).then(function (r) {
+      clearTimeout(t);
+      return r.text().then(function (txt) {
+        var j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) { /* corpo não-JSON */ }
+        if (!r.ok) {
+          var det = j && (j.detail || j.message || j.title || j.error) || txt.slice(0, 300);
+          var err = new Error('HTTP ' + r.status + (det ? ' — ' + det : '')); err.body = j; err.status = r.status; throw err;
+        }
+        return { body: j, headers: r.headers };
+      });
+    }).catch(function (e) {
+      clearTimeout(t);
+      if (e.name === 'AbortError') throw new Error('A API não respondeu em 90 s. No plano gratuito do Render a primeira chamada pode demorar; tente de novo.');
+      if (e instanceof TypeError) throw new Error('Não foi possível falar com a API (' + apiBase() + '). Verifique o endereço, se a instância está acordada e se o navegador permite a origem (CORS). Se esta página foi aberta como arquivo, publique-a junto da API.');
+      throw e;
+    });
+  }
+  function carregarVersao() {
+    var el = $('#apiStatus'); el.textContent = 'consultando…'; el.className = 'pill';
+    return apiFetch('/calculadora/dados-abertos/versao').then(function (r) {
+      VERSAO_API = r.body; var b = r.body || {};
+      el.textContent = 'API ok' + (b.versaoAplicacao ? ' · v' + b.versaoAplicacao : '') + (b.versaoBaseDados ? ' · base ' + b.versaoBaseDados : '');
+      el.className = 'pill ok'; return true;
+    }).catch(function (e) { el.textContent = 'API indisponível'; el.className = 'pill bad'; el.title = e.message; toast(e.message, 'err'); return false; });
+  }
+  function lista(path, params) { return apiFetch(path, params).then(function (r) { return Array.isArray(r.body) ? r.body : []; }); }
+
+  function carregarTabelas() {
+    var data = S.dataRegistro;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return Promise.resolve();
+    $('#refStatus').textContent = 'carregando tabelas oficiais…';
+    var base = '/calculadora/dados-abertos';
+    return Promise.all([
+      lista(base + '/ufs'),
+      lista(base + '/situacoes-tributarias/cbs-ibs', { data: data }),
+      lista(base + '/classificacoes-tributarias/cbs-ibs', { data: data }),
+      lista(base + '/situacoes-tributarias/is', { data: data }).catch(function () { return []; }),
+      lista(base + '/classificacoes-tributarias/imposto-seletivo', { data: data }).catch(function () { return []; }),
+      lista(base + '/fundamentacoes-legais', { data: data }).catch(function () { return []; })
+    ]).then(function (r) {
+      REF.ufs = r[0]; REF.cst = r[1]; REF.cc = r[2]; REF.cstIS = r[3]; REF.ccIS = r[4]; REF.fund = r[5]; REF.dataRef = data;
+      montarListas();
+      $('#refStatus').textContent = 'tabelas de ' + data.split('-').reverse().join('/') + ': ' + REF.cst.length + ' CST, ' + REF.cc.length + ' cClassTrib, ' + REF.fund.length + ' fundamentos';
+    }).catch(function (e) { $('#refStatus').textContent = 'tabelas não carregadas'; toast(e.message, 'err'); });
+  }
+  function dl(id, arr, fn) { $('#' + id).innerHTML = arr.map(function (x) { return '<option value="' + esc(fn(x)) + '"></option>'; }).join(''); }
+  function montarListas() {
+    dl('dl-cst', REF.cst, function (x) { return x.codigo + ' · ' + (x.descricao || ''); });
+    dl('dl-cc', REF.cc, function (x) { return x.codigo + ' · ' + (x.descricao || ''); });
+    dl('dl-cst-is', REF.cstIS, function (x) { return x.codigo + ' · ' + (x.descricao || ''); });
+    dl('dl-cc-is', REF.ccIS, function (x) { return x.codigo + ' · ' + (x.descricao || ''); });
+    dl('dl-fund', REF.fund, function (x) { return x.codigoClassificacaoTributaria + ' · ' + (x.textoCurto || x.texto || '') + (x.referenciaNormativa ? ' (' + x.referenciaNormativa + ')' : ''); });
+    var sel = $('#uf'), v = S.uf;
+    sel.innerHTML = '<option value="">—</option>' + REF.ufs.map(function (u) { return '<option value="' + esc(u.sigla) + '">' + esc(u.sigla + ' — ' + u.nome) + '</option>'; }).join('');
+    sel.value = v || '';
+    if (v) carregarMunicipios(v);
+  }
+  function carregarMunicipios(uf) {
+    if (!uf) { $('#dl-mun').innerHTML = ''; return Promise.resolve(); }
+    return lista('/calculadora/dados-abertos/ufs/municipios', { siglaUf: uf }).then(function (m) {
+      dl('dl-mun', m, function (x) { return x.codigo + ' · ' + x.nome; });
+    }).catch(function (e) { toast(e.message, 'err'); });
+  }
+  function codigoDe(v) { return String(v || '').split(' ')[0].replace(/\D/g, ''); }
+
+  /* ---------- renderização ---------- */
+  var CARACT = { direta: 'Importação direta (por conta própria)', conta_ordem: 'Importação por conta e ordem de terceiro', encomenda: 'Importação por encomenda' };
+  var MODAIS = { maritimo: 'Marítimo', aereo: 'Aéreo', rodoviario: 'Rodoviário', ferroviario: 'Ferroviário', fluvial: 'Fluvial/lacustre', postal: 'Postal/remessa', outro: 'Outro' };
+
+  function opts(map, sel) { return Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(map[k]) + '</option>'; }).join(''); }
+  function fld(label, path, extra) {
+    extra = extra || {};
+    return '<label class="f ' + (extra.cls || '') + '"><span>' + esc(label) + '</span><input data-b="' + path + '" value="' + esc(getPath(S, path)) + '"' +
+      (extra.type ? ' type="' + extra.type + '"' : '') + (extra.list ? ' list="' + extra.list + '"' : '') + (extra.ph ? ' placeholder="' + esc(extra.ph) + '"' : '') +
+      (extra.inputmode ? ' inputmode="' + extra.inputmode + '"' : '') + '></label>';
+  }
+  function ifld(i, label, path, extra) {
+    extra = extra || {};
+    return '<label class="f ' + (extra.cls || '') + '"><span>' + esc(label) + '</span><input data-i="' + i + '" data-f="' + path + '" value="' + esc(getPath(S.itens[i], path)) + '"' +
+      (extra.list ? ' list="' + extra.list + '"' : '') + (extra.ph ? ' placeholder="' + esc(extra.ph) + '"' : '') + (extra.inputmode ? ' inputmode="' + extra.inputmode + '"' : '') + '></label>';
+  }
+
+  function renderIdent() {
+    var d = S;
+    $('#tab-ident').innerHTML =
+      '<div class="grid">' +
+      '<section class="card"><h3>Identificação</h3><div class="row">' +
+      fld('Nº da DUIMP (se já registrada)', 'numeroDuimp', { ph: '26BR…' }) +
+      fld('Data de registro (fato gerador)', 'dataRegistro', { type: 'date' }) +
+      '</div><div class="row">' + fld('CNPJ/CPF do importador', 'importador.cnpj', { inputmode: 'numeric' }) + fld('Nome / razão social', 'importador.nome', { cls: 'w2' }) + '</div>' +
+      '<div class="row"><label class="f w2"><span>Caracterização da importação</span><select data-b="caracterizacao">' + opts(CARACT, d.caracterizacao) + '</select></label></div>' +
+      '<div class="row" id="rowAdq"' + (d.caracterizacao === 'direta' ? ' hidden' : '') + '>' + fld('CNPJ/CPF do adquirente/encomendante', 'adquirente.cnpj', { inputmode: 'numeric' }) + fld('Nome do adquirente/encomendante', 'adquirente.nome', { cls: 'w2' }) + '</div>' +
+      '</section>' +
+      '<section class="card"><h3>Local da operação de consumo (CBS/IBS)</h3>' +
+      '<p class="hint">Campos exigidos pelo Portal Único em Item &gt; Mercadoria para fins de CBS e IBS.</p><div class="row">' +
+      '<label class="f"><span>UF</span><select id="uf" data-b="uf"><option value="">—</option></select></label>' +
+      '<label class="f w2"><span>Município (código IBGE · nome)</span><input id="munInp" list="dl-mun" value="' + esc(d.municipio ? d.municipio + (d.municipioNome ? ' · ' + d.municipioNome : '') : '') + '" placeholder="digite para buscar"></label></div>' +
+      '<div class="row"><button class="btn sm" id="btnAliq" type="button">Buscar alíquotas de referência</button><span class="hint" id="aliqMsg"></span></div>' +
+      '<div class="row">' + fld('CBS nominal (%)', 'aliq.cbs', { inputmode: 'decimal' }) + fld('IBS estadual (%)', 'aliq.ibsUf', { inputmode: 'decimal' }) + fld('IBS municipal (%)', 'aliq.ibsMun', { inputmode: 'decimal' }) + '</div>' +
+      '<p class="hint">As alíquotas nominais só são enviadas à API para fatos geradores a partir de 01/01/2027 (a API as proíbe antes).</p>' +
+      '</section>' +
+      '<section class="card"><h3>Carga e valores</h3><div class="row">' +
+      '<label class="f"><span>Modal</span><select data-b="modal">' + opts(MODAIS, d.modal) + '</select></label>' + fld('Recinto aduaneiro', 'recinto') + fld('URF de despacho', 'urf') + fld('País de procedência', 'paisProc') + '</div>' +
+      '<div class="row">' + fld('Moeda', 'moeda') + fld('Taxa de câmbio (R$)', 'cambio', { inputmode: 'decimal' }) + fld('Incoterm', 'incoterm') + '</div>' +
+      '<div class="row">' + fld('Frete internacional (moeda)', 'freteMoeda', { inputmode: 'decimal' }) + fld('Seguro internacional (moeda)', 'seguroMoeda', { inputmode: 'decimal' }) +
+      '<label class="f"><span>Ratear frete/seguro por</span><select data-b="criterioRateio"><option value="valor"' + (d.criterioRateio === 'valor' ? ' selected' : '') + '>Valor da mercadoria</option><option value="peso"' + (d.criterioRateio === 'peso' ? ' selected' : '') + '>Peso líquido</option></select></label></div>' +
+      '</section>' +
+      '<section class="card"><h3>Observações</h3><label class="f"><span>Informações complementares</span><textarea data-b="observacoes" rows="4">' + esc(d.observacoes) + '</textarea></label></section>' +
+      '</div>';
+    if (REF.ufs.length) montarListas();
+  }
+
+  function itemHTML(it, i) {
+    var is = it.is, tr = it.tribReg;
+    return '<details class="item" data-idx="' + i + '"' + (S.itens.length === 1 || i === openItem ? ' open' : '') + '><summary><b>Item ' + esc(it.numero) + '</b> <span class="sum" data-sum="' + i + '"></span>' +
+      '<span class="acts"><button class="lnk" data-act="dup" data-i="' + i + '" type="button">duplicar</button><button class="lnk danger" data-act="del" data-i="' + i + '" type="button">remover</button></span></summary>' +
+      '<div class="row">' + ifld(i, 'Nº do item', 'numero', { inputmode: 'numeric' }) + ifld(i, 'Descrição da mercadoria', 'descricao', { cls: 'w3' }) + '</div>' +
+      '<div class="row">' + ifld(i, 'NCM (8 dígitos)', 'ncm', { inputmode: 'numeric' }) + ifld(i, 'NBS (opcional)', 'nbs', { inputmode: 'numeric' }) +
+      ifld(i, 'Quantidade', 'qtd', { inputmode: 'decimal' }) + ifld(i, 'Unidade', 'unidade') + ifld(i, 'Peso líquido (kg)', 'pesoLiq', { inputmode: 'decimal' }) +
+      '<button class="btn sm self" data-act="ncm" data-i="' + i + '" type="button">Verificar NCM</button></div>' +
+      '<div class="msg" data-msg="' + i + '"></div>' +
+      '<h4>Valores e tributos que compõem a base</h4>' +
+      '<div class="row"><label class="f"><span>Modo de base</span><select data-i="' + i + '" data-f="modoBase"><option value="componentes"' + (it.modoBase === 'componentes' ? ' selected' : '') + '>Componentes (a API calcula a BC)</option><option value="manual"' + (it.modoBase === 'manual' ? ' selected' : '') + '>Base informada</option></select></label>' +
+      (it.modoBase === 'manual' ? ifld(i, 'Base de cálculo CBS/IBS (R$)', 'baseManual', { inputmode: 'decimal' }) :
+        ifld(i, 'Valor da mercadoria (moeda)', 'vMerc', { inputmode: 'decimal' }) + ifld(i, 'II (R$)', 'ii', { inputmode: 'decimal' }) + ifld(i, 'IPI (R$)', 'ipi', { inputmode: 'decimal' }) +
+        ifld(i, 'PIS-importação (R$)', 'pis', { inputmode: 'decimal' }) + ifld(i, 'COFINS-importação (R$)', 'cofins', { inputmode: 'decimal' }) + ifld(i, 'ICMS (R$)', 'icms', { inputmode: 'decimal' }) +
+        ifld(i, 'Outras taxas e contribuições na base — TSA, TFVS, TFFA… (R$)', 'outrasTaxas', { inputmode: 'decimal', cls: 'w2' })) + '</div>' +
+      '<div class="der" data-der="' + i + '"></div>' +
+      '<h4>Classificação tributária</h4>' +
+      '<div class="row">' + ifld(i, 'Fundamento legal (busca)', 'fundamento', { list: 'dl-fund', cls: 'w3', ph: 'digite parte do texto ou o cClassTrib' }) + '</div>' +
+      '<div class="row">' + ifld(i, 'CST (3 dígitos)', 'cst', { list: 'dl-cst', inputmode: 'numeric' }) + ifld(i, 'cClassTrib (6 dígitos)', 'cClassTrib', { list: 'dl-cc', inputmode: 'numeric' }) + '</div>' +
+      '<label class="chk"><input type="checkbox" data-i="' + i + '" data-f="is.ativo"' + (is.ativo ? ' checked' : '') + '> Item sujeito ao Imposto Seletivo</label>' +
+      (is.ativo ? '<div class="row sub">' + ifld(i, 'CST do IS', 'is.cst', { list: 'dl-cst-is', inputmode: 'numeric' }) + ifld(i, 'cClassTrib do IS', 'is.cClassTrib', { list: 'dl-cc-is', inputmode: 'numeric' }) +
+        ifld(i, 'BC do IS (R$) — vazio = valor aduaneiro + II', 'is.bc', { inputmode: 'decimal', cls: 'w2' }) + ifld(i, 'IS informado (R$)', 'is.valor', { inputmode: 'decimal' }) +
+        ifld(i, 'Qtd. tributável', 'is.qtd', { inputmode: 'decimal' }) + ifld(i, 'Unid. tributável', 'is.unidade') + '</div>' : '') +
+      '<label class="chk"><input type="checkbox" data-i="' + i + '" data-f="tribReg.ativo"' + (tr.ativo ? ' checked' : '') + '> Informar tributação regular (quando o fundamento legal exigir)</label>' +
+      (tr.ativo ? '<div class="row sub">' + ifld(i, 'CST da tributação regular', 'tribReg.cst', { list: 'dl-cst', inputmode: 'numeric' }) + ifld(i, 'cClassTrib da tributação regular', 'tribReg.cClassTrib', { list: 'dl-cc', inputmode: 'numeric' }) + '</div>' : '') +
+      '</details>';
+  }
+  var openItem = -1;
+  function renderItens() {
+    $('#tab-itens').innerHTML =
+      '<div class="bar"><button class="btn" id="btnAddItem" type="button">+ Adicionar item</button><span class="hint">' + S.itens.length + ' item(ns). Frete e seguro internacionais são rateados entre os itens conforme a aba Identificação.</span></div>' +
+      '<div id="listaItens">' + S.itens.map(itemHTML).join('') + '</div>';
+    refreshDerivados();
+  }
+  function refreshDerivados() {
+    var der = C.derivados(S);
+    S.itens.forEach(function (it, i) {
+      var x = der[i], el = $('[data-der="' + i + '"]'), sm = $('[data-sum="' + i + '"]');
+      var prev = x.valorAduaneiro + C.num(it.ii) + C.num(it.ipi) + C.num(it.outrasTaxas) + C.num(it.pis) + C.num(it.cofins) + C.num(it.icms);
+      if (el) el.innerHTML = it.modoBase === 'manual' ? '' :
+        'Mercadoria R$ ' + C.brl(x.vMercBRL) + ' · frete R$ ' + C.brl(x.frete) + ' · seguro R$ ' + C.brl(x.seguro) + ' · <b>valor aduaneiro R$ ' + C.brl(x.valorAduaneiro) + '</b> · base prévia (referência local) R$ ' + C.brl(C.r2(prev));
+      if (sm) sm.textContent = [it.ncm, it.descricao && it.descricao.slice(0, 50), 'R$ ' + C.brl(x.vMercBRL)].filter(Boolean).join(' · ');
+    });
+  }
+
+  function renderCalculo() {
+    var h = '<div class="bar"><button class="btn primary" id="btnCalc" type="button">Calcular CBS / IBS / IS</button>' +
+      '<button class="btn" id="btnPayload" type="button">Baixar payload da API</button><span class="hint" id="calcMsg"></span></div>';
+    var ano = C.anoDe(S);
+    if (ano === 2026 || String(S.dataRegistro) < '2027-01-01')
+      h += '<div class="aviso">Conforme a Receita Federal (página “Reforma Tributária do Consumo” da DUIMP), em 2026 os valores de CBS e IBS informados na DUIMP <b>não devem ser recolhidos</b>: os resultados abaixo são informativos.</div>';
+    if (!RP) h += '<p class="hint">Preencha identificação e itens e clique em calcular. O cálculo é feito pela API oficial da calculadora (regime geral, LC 214/2025); esta ferramenta não calcula tributos por conta própria.</p>';
+    else {
+      if (RW) h += '<div class="aviso">A API sinalizou uso de dados simulados (cabeçalho x-warning-dados-simulados = ' + esc(RW) + '). Não utilize em trabalho profissional sem conferir a fonte oficial.</div>';
+      h += '<div class="tot"><div><span>Base CBS/IBS</span><b>R$ ' + C.brl(RP.totais.vBC) + '</b></div><div><span>CBS</span><b>R$ ' + C.brl(RP.totais.vCBS) + '</b></div>' +
+        '<div><span>IBS estadual</span><b>R$ ' + C.brl(RP.totais.vIBSUF) + '</b></div><div><span>IBS municipal</span><b>R$ ' + C.brl(RP.totais.vIBSMun) + '</b></div>' +
+        '<div><span>IBS total</span><b>R$ ' + C.brl(RP.totais.vIBS) + '</b></div><div><span>Imposto Seletivo</span><b>R$ ' + C.brl(RP.totais.vIS) + '</b></div></div>';
+      h += '<div class="tblw"><table><thead><tr><th>Item</th><th>CST / cClassTrib</th><th class="r">Base</th><th class="r">% CBS</th><th class="r">CBS</th><th class="r">% IBS UF</th><th class="r">IBS UF</th><th class="r">% IBS Mun.</th><th class="r">IBS Mun.</th><th class="r">IS</th></tr></thead><tbody>' +
+        RP.linhas.map(function (l) {
+          return '<tr><td>' + esc(l.nObj) + (l.simulado ? ' <span class="pill bad" title="cálculo simulado">sim.</span>' : '') + '</td><td>' + esc((l.cst || '') + ' / ' + (l.cClassTrib || '')) + '</td><td class="r">' + C.brl(l.vBC) + '</td>' +
+            '<td class="r">' + pct(l.pCBS) + '</td><td class="r">' + C.brl(l.vCBS) + '</td><td class="r">' + pct(l.pIBSUF) + '</td><td class="r">' + C.brl(l.vIBSUF) + '</td>' +
+            '<td class="r">' + pct(l.pIBSMun) + '</td><td class="r">' + C.brl(l.vIBSMun) + '</td><td class="r">' + C.brl(l.vIS) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      h += '<h4>Memória de cálculo</h4>' + RP.linhas.map(function (l) {
+        var m = l.memoria, partes = ['CBS', 'IBSUF', 'IBSMun', 'IS'].filter(function (k) { return m[k]; });
+        if (!partes.length) return '';
+        return '<details class="mem"><summary>Item ' + esc(l.nObj) + '</summary>' + partes.map(function (k) { return '<p><b>' + k + '</b><br><span class="pre">' + esc(m[k]) + '</span></p>'; }).join('') + '</details>';
+      }).join('');
+      h += '<details class="mem"><summary>Resposta bruta da API (JSON)</summary><pre>' + esc(JSON.stringify(R, null, 2)) + '</pre></details>';
+    }
+    $('#tab-calc').innerHTML = h;
+  }
+  function pct(x) { return x == null ? '' : Number(x).toLocaleString('pt-BR', { maximumFractionDigits: 4 }) + '%'; }
+
+  /* ---------- guias ---------- */
+  function cab(titulo, sub) {
+    return '<header class="gh"><div><h2>' + esc(titulo) + '</h2><p>' + esc(sub) + '</p></div><div class="gm">Gerado em ' + new Date().toLocaleString('pt-BR') + '<br>Data de registro: ' + esc(String(S.dataRegistro).split('-').reverse().join('/')) +
+      (VERSAO_API && VERSAO_API.versaoAplicacao ? '<br>API v' + esc(VERSAO_API.versaoAplicacao) : '') + '</div></header>';
+  }
+  function guiaConferencia() {
+    var der = C.derivados(S), l = RP ? RP.linhas : [];
+    var porItem = {}; l.forEach(function (x) { porItem[x.nObj] = x; });
+    var linhas = S.itens.map(function (it, i) {
+      var x = porItem[parseInt(it.numero, 10)] || {};
+      return '<tr><td>' + esc(it.numero) + '</td><td>' + esc(C.onlyDigits(it.ncm)) + '</td><td>' + esc(it.descricao) + '</td><td class="r">' + C.brl(der[i].valorAduaneiro) + '</td><td class="r">' + C.brl(C.num(it.ii)) + '</td>' +
+        '<td>' + esc(it.cst + '/' + it.cClassTrib) + '</td><td class="r">' + (RP ? C.brl(x.vBC) : '—') + '</td><td class="r">' + (RP ? C.brl(x.vCBS) : '—') + '</td><td class="r">' + (RP ? C.brl(x.vIBSUF) : '—') + '</td><td class="r">' + (RP ? C.brl(x.vIBSMun) : '—') + '</td><td class="r">' + (RP ? C.brl(x.vIS) : '—') + '</td></tr>';
+    }).join('');
+    var t = RP ? RP.totais : null, totAdu = C.r2(der.reduce(function (a, x) { return a + x.valorAduaneiro; }, 0));
+    return cab('Guia de conferência da DUIMP — CBS, IBS e IS', 'Documento auxiliar de conferência. Não é o Extrato da Duimp, não substitui o registro no Portal Único nem constitui guia de pagamento.') +
+      '<table class="kv"><tr><th>Importador</th><td>' + esc(S.importador.nome) + ' — ' + esc(S.importador.cnpj) + '</td><th>Nº da DUIMP</th><td>' + esc(S.numeroDuimp || '(não registrada)') + '</td></tr>' +
+      '<tr><th>Caracterização</th><td>' + esc(CARACT[S.caracterizacao]) + (S.caracterizacao !== 'direta' ? '<br>Adquirente/encomendante: ' + esc(S.adquirente.nome) + ' — ' + esc(S.adquirente.cnpj) : '') + '</td><th>Local da operação de consumo</th><td>' + esc(S.uf) + ' · ' + esc(S.municipioNome || '') + ' (' + esc(S.municipio) + ')</td></tr>' +
+      '<tr><th>Modal / recinto</th><td>' + esc(MODAIS[S.modal] || '') + ' · ' + esc(S.recinto) + '</td><th>Moeda / câmbio</th><td>' + esc(S.moeda) + ' · ' + C.brl(C.num(S.cambio)) + '</td></tr></table>' +
+      '<table><thead><tr><th>Item</th><th>NCM</th><th>Descrição</th><th class="r">Valor aduaneiro</th><th class="r">II</th><th>CST/cClassTrib</th><th class="r">Base CBS/IBS</th><th class="r">CBS</th><th class="r">IBS UF</th><th class="r">IBS Mun.</th><th class="r">IS</th></tr></thead><tbody>' + linhas + '</tbody>' +
+      '<tfoot><tr><td colspan="3">Totais</td><td class="r">' + C.brl(totAdu) + '</td><td></td><td></td><td class="r">' + (t ? C.brl(t.vBC) : '—') + '</td><td class="r">' + (t ? C.brl(t.vCBS) : '—') + '</td><td class="r">' + (t ? C.brl(t.vIBSUF) : '—') + '</td><td class="r">' + (t ? C.brl(t.vIBSMun) : '—') + '</td><td class="r">' + (t ? C.brl(t.vIS) : '—') + '</td></tr></tfoot></table>' +
+      (RP ? '' : '<p class="warn">Os valores de CBS/IBS/IS aparecem somente após o cálculo na aba “Cálculo”.</p>') +
+      (String(S.dataRegistro) < '2027-01-01' ? '<p class="warn">Fato gerador em 2026: segundo a Receita Federal, os valores de CBS e IBS não devem ser recolhidos; os números são informativos.</p>' : '') +
+      '<p class="fine">Cálculo realizado pela API da Calculadora de Tributos da Receita Federal (regime geral). Conferir sempre a versão da base e a fonte oficial antes de uso profissional. ' + esc(S.observacoes) + '</p>';
+  }
+  function guiaAnvisa() {
+    var a = S.anvisa, sim = a.art23p6 === 'sim';
+    return cab('Guia de Taxa Anvisa — dados para registro no PCCE', 'Ficha de atributos conforme o item 6.1 do Manual Anvisa (DUIMP, v. 1.10). A guia oficial é registrada no Portal Único (LPCO integrado ao PCCE).') +
+      '<table class="kv"><tr><th>CPF/CNPJ do importador</th><td>' + esc(S.importador.cnpj) + '</td><th>Nome / endereço</th><td>' + esc(S.importador.nome) + ' <em>(carregado automaticamente pelo Portal Único a partir dos dados da RFB)</em></td></tr>' +
+      '<tr><th>Categoria regulatória</th><td>' + esc(a.categoria) + '</td><th>Finalidade da importação</th><td>' + esc(a.finalidade) + '</td></tr>' +
+      '<tr><th>Código de assunto — petição primária</th><td>' + esc(a.assuntoPrimario) + '</td><th>Código de assunto — petição secundária</th><td>' + esc(a.assuntoSecundario || '—') + '</td></tr>' +
+      '<tr><th>CNPJ do detentor da regularização</th><td>' + esc(a.cnpjDetentor || '(em branco: produto não regularizado ou isento)') + '</td><th>CNPJ do recinto armazenador</th><td>' + esc(a.cnpjRecinto) + '</td></tr>' +
+      '<tr><th>Cumpro o §6º do art. 23 da Lei 9.782/99</th><td>' + (sim ? 'Sim' : 'Não') + '</td><th>Critério de priorização</th><td>' + esc(a.priorizacao || '—') + '</td></tr></table>' +
+      '<p class="fine">O valor da taxa depende do código de assunto (Anexo I do Manual) e do porte da empresa cadastrado na Anvisa; esta ficha não calcula nem emite cobrança. A guia pode ter mais de uma por DUIMP, desde que da mesma categoria regulatória e finalidade (art. 36 da RDC 977/2025). Na retificação, apenas o código de assunto secundário pode ser editado.</p>';
+  }
+  function renderGuias() {
+    var h = '<div class="bar"><button class="btn primary" data-print="conf" type="button">Imprimir / salvar PDF — conferência CBS/IBS/IS</button>' +
+      '<button class="btn" data-print="anvisa" type="button">Imprimir / salvar PDF — ficha da guia de taxa Anvisa</button></div>';
+    h += '<section class="card"><h3>Guia de taxa Anvisa (opcional)</h3><label class="chk"><input type="checkbox" data-b="anvisa.ativo"' + (S.anvisa.ativo ? ' checked' : '') + '> Esta DUIMP tem anuência da Anvisa</label>';
+    if (S.anvisa.ativo) {
+      h += '<div class="row">' + fld('Categoria regulatória', 'anvisa.categoria') + fld('Finalidade da importação', 'anvisa.finalidade') + fld('Critério de priorização', 'anvisa.priorizacao') + '</div>' +
+        '<div class="row">' + fld('Cód. assunto — petição primária', 'anvisa.assuntoPrimario') + fld('Cód. assunto — petição secundária', 'anvisa.assuntoSecundario') + '</div>' +
+        '<div class="row">' + fld('CNPJ do detentor da regularização', 'anvisa.cnpjDetentor', { inputmode: 'numeric' }) + fld('CNPJ do recinto armazenador', 'anvisa.cnpjRecinto', { inputmode: 'numeric' }) +
+        '<label class="f"><span>Cumpro o §6º do art. 23 da Lei 9.782/99</span><select data-b="anvisa.art23p6"><option value="nao"' + (S.anvisa.art23p6 !== 'sim' ? ' selected' : '') + '>Não</option><option value="sim"' + (S.anvisa.art23p6 === 'sim' ? ' selected' : '') + '>Sim</option></select></label></div>';
+    }
+    h += '</section><div class="preview" id="guiaPrev">' + guiaConferencia() + (S.anvisa.ativo ? '<hr>' + guiaAnvisa() : '') + '</div>';
+    $('#tab-guias').innerHTML = h;
+  }
+  function imprimir(tipo) {
+    var errs = C.validar(S).filter(function (m) { return tipo !== 'anvisa' || /Anvisa/.test(m); });
+    if (errs.length && tipo === 'anvisa') { toast(errs[0], 'err'); return; }
+    var area = $('#printArea');
+    area.innerHTML = tipo === 'anvisa' ? guiaAnvisa() : guiaConferencia();
+    document.body.classList.add('printing');
+    setTimeout(function () { window.print(); setTimeout(function () { document.body.classList.remove('printing'); area.innerHTML = ''; }, 300); }, 50);
+  }
+
+  function renderIO() {
+    $('#tab-io').innerHTML =
+      '<div class="grid"><section class="card"><h3>Exportar</h3>' +
+      '<div class="row"><button class="btn" id="exJson" type="button">DUIMP completa (JSON)</button><button class="btn" id="exCsv" type="button">Itens (CSV “;”)</button><button class="btn" id="exPayload" type="button">Payload da API de cálculo</button></div>' +
+      '<p class="hint">O JSON exportado preserva todos os campos desta ferramenta e pode ser reimportado. O CSV abre no Excel (separador ponto e vírgula, decimal com vírgula).</p></section>' +
+      '<section class="card"><h3>Importar</h3>' +
+      '<label class="f"><span>JSON desta ferramenta ou payload da API (OperacaoInput)</span><input type="file" id="imJson" accept=".json,application/json"></label>' +
+      '<label class="f"><span>CSV de itens</span><input type="file" id="imCsv" accept=".csv,text/csv,text/plain"></label>' +
+      '<label class="chk"><input type="checkbox" id="imSubst" checked> CSV substitui os itens atuais (desmarque para acrescentar)</label>' +
+      '<p class="hint">Colunas do CSV: ' + esc(C.CSV_CAMPOS.join('; ')) + '. Valores em reais; “vMerc” na moeda da DUIMP.</p></section>' +
+      '<section class="card"><h3>Rascunho</h3><p class="hint">Esta ferramenta guarda um rascunho automático neste navegador. Dados sensíveis não são enviados a ninguém além da API de cálculo configurada no topo.</p><button class="btn danger" id="btnNova" type="button">Nova DUIMP (limpar tudo)</button></section></div>';
+  }
+
+  function renderAll() { renderIdent(); renderItens(); renderCalculo(); renderGuias(); renderIO(); atualizarErros(); }
+  function atualizarErros() {
+    var e = C.validar(S), el = $('#erros');
+    el.innerHTML = e.length ? '<b>' + e.length + ' pendência(s):</b> ' + e.slice(0, 4).map(esc).join(' · ') + (e.length > 4 ? ' · …' : '') : '<span class="okmsg">Sem pendências de preenchimento.</span>';
+    el.className = 'erros' + (e.length ? '' : ' ok');
+  }
+
+  /* ---------- ações ---------- */
+  function calcular() {
+    var errs = C.validar(S);
+    if (errs.length) { toast(errs[0] + (errs.length > 1 ? ' (+' + (errs.length - 1) + ')' : ''), 'err'); atualizarErros(); return; }
+    var btn = $('#btnCalc'), msg = $('#calcMsg'); btn.disabled = true; msg.textContent = 'calculando… (a primeira chamada pode demorar se a instância estiver dormindo)';
+    PAYLOAD = C.montarPayload(S);
+    apiFetch('/calculadora/regime-geral', null, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(PAYLOAD) })
+      .then(function (r) {
+        R = r.body; RP = C.lerResposta(R); RW = r.headers.get('x-warning-dados-simulados');
+        renderCalculo(); renderGuias(); toast('Cálculo concluído.');
+      }).catch(function (e) {
+        renderCalculo(); $('#calcMsg').textContent = ''; toast(e.message, 'err');
+        $('#tab-calc').insertAdjacentHTML('beforeend', '<div class="aviso err"><b>Erro da API:</b> ' + esc(e.message) + '</div>');
+      });
+  }
+  function buscarAliquotas() {
+    var msg = $('#aliqMsg'), uf = REF.ufs.filter(function (u) { return u.sigla === S.uf; })[0];
+    if (!S.municipio || !uf) { msg.textContent = 'Informe UF e município.'; return; }
+    msg.textContent = 'consultando…';
+    var base = '/calculadora/dados-abertos', data = S.dataRegistro;
+    var pick = function (r) { var b = r.body || {}; return b.aliquotaPropria != null ? b.aliquotaPropria : b.aliquotaReferencia; };
+    Promise.all([apiFetch(base + '/aliquota-uniao', { data: data }), apiFetch(base + '/aliquota-uf', { codigoUf: uf.codigo, data: data }), apiFetch(base + '/aliquota-municipio', { codigoMunicipio: S.municipio, data: data })])
+      .then(function (r) {
+        S.aliq.cbs = pick(r[0]); S.aliq.ibsUf = pick(r[1]); S.aliq.ibsMun = pick(r[2]);
+        renderIdent(); salvarRascunho(); $('#aliqMsg').textContent = 'alíquotas aplicadas (confira antes de usar).';
+      }).catch(function (e) { msg.textContent = e.message; });
+  }
+  function verificarNcm(i) {
+    var it = S.itens[i], m = $('[data-msg="' + i + '"]');
+    var ncm = C.onlyDigits(it.ncm); if (ncm.length !== 8) { m.textContent = 'NCM deve ter 8 dígitos.'; return; }
+    m.textContent = 'consultando…';
+    apiFetch('/calculadora/dados-abertos/ncm', { ncm: ncm, data: S.dataRegistro }).then(function (r) {
+      var b = r.body; m.innerHTML = '<span class="okmsg">NCM encontrado na base.</span> ' + esc(JSON.stringify(b).slice(0, 400));
+    }).catch(function (e) { m.textContent = e.message; });
+  }
+
+  /* ---------- eventos ---------- */
+  function onInput(ev) {
+    var t = ev.target;
+    if (t.dataset.b) {
+      var v = t.type === 'checkbox' ? t.checked : t.value;
+      setPath(S, t.dataset.b, v);
+      if (t.dataset.b === 'caracterizacao') { $('#rowAdq').hidden = v === 'direta'; }
+      if (t.dataset.b === 'dataRegistro' && ev.type === 'change') { carregarTabelas(); if (document.querySelector('#tab-calc.on')) renderCalculo(); }
+      if (t.dataset.b === 'uf' && ev.type === 'change') { S.municipio = ''; S.municipioNome = ''; $('#munInp').value = ''; carregarMunicipios(v); }
+      if (t.dataset.b === 'anvisa.ativo' || t.dataset.b === 'anvisa.art23p6') renderGuias();
+      refreshDerivados(); atualizarErros(); salvarDeb(); return;
+    }
+    if (t.id === 'munInp') {
+      var cod = codigoDe(t.value);
+      if (/^\d{7}$/.test(cod)) { S.municipio = cod; S.municipioNome = t.value.split('·').slice(1).join('·').trim(); }
+      else S.municipio = '';
+      atualizarErros(); salvarDeb(); return;
+    }
+    if (t.dataset.i !== undefined && t.dataset.f) {
+      var i = parseInt(t.dataset.i, 10), it = S.itens[i], val = t.type === 'checkbox' ? t.checked : t.value;
+      if (t.dataset.f === 'fundamento') {
+        var cod2 = codigoDe(val), f = REF.fund.filter(function (x) { return x.codigoClassificacaoTributaria === cod2; })[0];
+        if (f && ev.type === 'change') {
+          it.cClassTrib = f.codigoClassificacaoTributaria; it.cst = f.codigoSituacaoTributaria || it.cst; it.fundamento = val;
+          openItem = i; renderItens(); atualizarErros(); salvarDeb(); return;
+        }
+        it.fundamento = val; salvarDeb(); return;
+      }
+      if (/(^|\.)(cst|cClassTrib)$/.test(t.dataset.f)) val = codigoDe(val); // aceita “000 · descrição” do datalist
+      setPath(it, t.dataset.f, val);
+      if (t.dataset.f === 'modoBase' || t.dataset.f === 'is.ativo' || t.dataset.f === 'tribReg.ativo') { openItem = i; renderItens(); }
+      else if (/(^|\.)(cst|cClassTrib)$/.test(t.dataset.f) && ev.type === 'change') t.value = val;
+      refreshDerivados(); atualizarErros(); salvarDeb();
+    }
+  }
+  function onClick(ev) {
+    var t = ev.target.closest('button,[data-act],[data-print]'); if (!t) return;
+    if (t.dataset.print) return imprimir(t.dataset.print);
+    var i = parseInt(t.dataset.i, 10);
+    switch (t.dataset.act || t.id) {
+      case 'btnAddItem': var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); S.itens.push(C.novoItem(max + 1)); openItem = S.itens.length - 1; renderItens(); salvarRascunho(); atualizarErros(); break;
+      case 'dup': var c = JSON.parse(JSON.stringify(S.itens[i])); c.numero = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0) + 1; S.itens.splice(i + 1, 0, c); openItem = i + 1; renderItens(); salvarRascunho(); atualizarErros(); break;
+      case 'del': if (S.itens.length > 1) { S.itens.splice(i, 1); openItem = -1; renderItens(); salvarRascunho(); atualizarErros(); } else toast('A DUIMP precisa de ao menos um item.', 'err'); break;
+      case 'ncm': verificarNcm(i); break;
+      case 'btnCalc': calcular(); break;
+      case 'btnPayload': case 'exPayload':
+        var e = C.validar(S); if (e.length) { toast(e[0], 'err'); break; }
+        download('payload-calculadora-rtc.json', JSON.stringify(C.montarPayload(S), null, 2)); break;
+      case 'btnAliq': buscarAliquotas(); break;
+      case 'exJson': download('duimp-' + (S.numeroDuimp || 'rascunho') + '.json', JSON.stringify(C.exportar(S), null, 2)); break;
+      case 'exCsv': download('duimp-itens.csv', '﻿' + C.itensParaCSV(S.itens), 'text/csv;charset=utf-8'); break;
+      case 'btnNova': S = C.novaDuimp(); R = RP = RW = PAYLOAD = null; salvarRascunho(); renderAll(); montarListas(); toast('DUIMP limpa.'); break;
+    }
+  }
+  function lerArquivo(file) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result)); }; r.onerror = function () { rej(new Error('Falha ao ler o arquivo.')); }; r.readAsText(file); }); }
+  function onFile(ev) {
+    var t = ev.target; if (!t.files || !t.files[0]) return;
+    lerArquivo(t.files[0]).then(function (txt) {
+      if (t.id === 'imJson') {
+        var r = C.importar(JSON.parse(txt)); S = r.duimp; R = RP = null; salvarRascunho(); renderAll(); montarListas();
+        toast(r.origem === 'payload-api' ? 'Payload da API importado (frete/seguro ficam embutidos no valor da mercadoria).' : 'DUIMP importada.');
+      } else if (t.id === 'imCsv') {
+        var itens = C.csvParaItens(txt);
+        if ($('#imSubst').checked) S.itens = itens;
+        else { var max = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0); itens.forEach(function (x, k) { x.numero = max + k + 1; S.itens.push(x); }); }
+        salvarRascunho(); renderAll(); toast(itens.length + ' item(ns) importado(s) do CSV.');
+      }
+    }).catch(function (e) { toast(e.message, 'err'); }).then(function () { t.value = ''; });
+  }
+  function trocarAba(nome) {
+    $$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === nome); });
+    $$('.pane').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + nome); });
+    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo();
+  }
+
+  /* ---------- início ---------- */
+  function init() {
+    var rasc = lerRascunho();
+    if (rasc && rasc.itens) { try { S = C.importar({ formato: 'duimp-rtc', versaoFormato: 1, duimp: rasc }).duimp; } catch (e) { S = C.novaDuimp(); } }
+    var salvo = null; try { salvo = localStorage.getItem(LS_API); } catch (e) { /* sem storage */ }
+    $('#apiUrl').value = location.pathname.indexOf('/api/') === 0 ? location.origin + '/api' : (salvo || RENDER_URL);
+    renderAll();
+    document.addEventListener('input', onInput); document.addEventListener('change', onInput);
+    document.addEventListener('click', onClick); document.addEventListener('change', onFile);
+    $$('.tab').forEach(function (b) { b.addEventListener('click', function () { trocarAba(b.dataset.tab); }); });
+    $('#btnApi').addEventListener('click', function () { try { localStorage.setItem(LS_API, apiBase()); } catch (e) { /* ok */ } carregarVersao().then(function (ok) { if (ok) carregarTabelas(); }); });
+    carregarVersao().then(function (ok) { if (ok) carregarTabelas(); });
+  }
+  window.DuimpApp = { init: init, _estado: function () { return S; } };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+</body>
+</html>
