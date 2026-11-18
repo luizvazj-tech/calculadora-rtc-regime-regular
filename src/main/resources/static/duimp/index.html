@@ -33,7 +33,7 @@ input[type=checkbox]{width:auto}.chk{display:flex;gap:8px;align-items:center;mar
 details.item{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:10px}
 details.item>summary{cursor:pointer;display:flex;gap:10px;align-items:center}.item .sum{color:var(--mut);font-size:12px;flex:1}.item .acts{margin-left:auto}
 .der{font-size:12px;color:var(--mut);background:var(--pri2);border-radius:6px;padding:6px 10px;margin:6px 0}
-.msg{font-size:12px;color:var(--mut);margin:2px 0}.okmsg{color:var(--ok)}
+.msg{font-size:12px;color:var(--mut);margin:2px 0}.msg.bad{color:var(--bad)}.msg.bad{color:var(--bad)}.okmsg{color:var(--ok)}
 .aviso{background:var(--warnbg);color:var(--warn);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:10px 0}.aviso.err{background:var(--badbg);color:var(--bad)}
 .tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tot div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tot span{display:block;font-size:12px;color:var(--mut)}.tot b{font-size:16px}
 .tblw{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{background:var(--pri2);font-weight:600}.r{text-align:right;font-variant-numeric:tabular-nums}tfoot td{font-weight:700}
@@ -130,6 +130,39 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     return c.length === 14 ? cnpjValido(c) : c.length === 11 ? cpfValido(c) : false;
   }
 
+
+  /* ---------- BrasilAPI (CNPJ) e ViaCEP (CEP): normalização das respostas ---------- */
+  function cepLimpo(v) { var c = onlyDigits(v); return c.length === 8 ? c : ''; }
+  function fmtCep(c) { c = onlyDigits(c); return c.length === 8 ? c.slice(0, 5) + '-' + c.slice(5) : c; }
+  function fmtCnpj(c) {
+    c = onlyDigits(c);
+    return c.length === 14 ? c.slice(0, 2) + '.' + c.slice(2, 5) + '.' + c.slice(5, 8) + '/' + c.slice(8, 12) + '-' + c.slice(12) : c;
+  }
+  function norm(s) { return s == null ? '' : String(s).trim(); }
+  function titulo(s) {
+    s = norm(s); if (!s) return '';
+    return s.toLowerCase().replace(/(^|[\s\-\/(])([a-zà-ú])/g, function (m, a, b) { return a + b.toUpperCase(); })
+      .replace(/\b(Da|De|Do|Das|Dos|E)\b/g, function (w) { return w.toLowerCase(); });
+  }
+  /* BrasilAPI: GET /api/cnpj/v1/{cnpj} */
+  function normalizarBrasilApiCnpj(j) {
+    if (!j || typeof j !== 'object' || !j.razao_social) throw new Error('Resposta da BrasilAPI sem razão social.');
+    var ibge = onlyDigits(j.codigo_municipio_ibge);
+    return {
+      nome: norm(j.razao_social), cep: fmtCep(j.cep),
+      logradouro: [norm(j.descricao_tipo_de_logradouro), norm(j.logradouro)].filter(Boolean).join(' '),
+      numero: norm(j.numero), bairro: titulo(j.bairro), cidade: titulo(j.municipio), uf: norm(j.uf).toUpperCase(),
+      ibge: ibge.length === 7 ? ibge : '', situacao: norm(j.descricao_situacao_cadastral)
+    };
+  }
+  /* ViaCEP: GET /ws/{cep}/json/ — em CEP inexistente devolve {"erro": true} (às vezes "true" como texto) */
+  function normalizarViaCep(j) {
+    if (!j || typeof j !== 'object' || j.erro === true || j.erro === 'true') throw new Error('CEP não encontrado.');
+    var ibge = onlyDigits(j.ibge);
+    return { cep: fmtCep(j.cep), logradouro: norm(j.logradouro), bairro: norm(j.bairro), cidade: norm(j.localidade),
+             uf: norm(j.uf).toUpperCase(), ibge: ibge.length === 7 ? ibge : '' };
+  }
+
   /* ---------- modelo ---------- */
   function novoItem(n) {
     return {
@@ -146,11 +179,11 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     var d = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
     return {
       numeroDuimp: '', dataRegistro: d, observacoes: '',
-      importador: { cnpj: '', nome: '' },
-      caracterizacao: 'direta', adquirente: { cnpj: '', nome: '' },
+      importador: { cnpj: '', nome: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '', situacao: '' },
+      caracterizacao: 'direta', adquirente: { cnpj: '', nome: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', uf: '', situacao: '' },
       modal: 'maritimo', recinto: '', urf: '', paisProc: '',
       moeda: 'USD', cambio: 1, incoterm: '', freteMoeda: 0, seguroMoeda: 0, criterioRateio: 'valor',
-      uf: '', municipio: '', municipioNome: '',
+      uf: '', municipio: '', municipioNome: '', destinoCep: '',
       aliq: { cbs: '', ibsUf: '', ibsMun: '' },
       anvisa: { ativo: false, categoria: '', finalidade: '', assuntoPrimario: '', assuntoSecundario: '',
                 cnpjDetentor: '', cnpjRecinto: '', art23p6: 'nao', priorizacao: '' },
@@ -437,7 +470,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     num: num, r2: r2, brl: brl, onlyDigits: onlyDigits, cnpjValido: cnpjValido, cpfValido: cpfValido, docValido: docValido,
     novoItem: novoItem, novaDuimp: novaDuimp, ratear: ratear, derivados: derivados, montarPayload: montarPayload,
     validar: validar, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
-    exportar: exportar, importar: importar, exigeAliquotasNominais: exigeAliquotasNominais, anoDe: anoDe, CSV_CAMPOS: CSV_CAMPOS
+    exportar: exportar, importar: importar, exigeAliquotasNominais: exigeAliquotasNominais, anoDe: anoDe, cepLimpo: cepLimpo, fmtCep: fmtCep, fmtCnpj: fmtCnpj,
+    normalizarBrasilApiCnpj: normalizarBrasilApiCnpj, normalizarViaCep: normalizarViaCep, CSV_CAMPOS: CSV_CAMPOS
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.DuimpCore;
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
@@ -573,6 +607,75 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       (extra.list ? ' list="' + extra.list + '"' : '') + (extra.ph ? ' placeholder="' + esc(extra.ph) + '"' : '') + (extra.inputmode ? ' inputmode="' + extra.inputmode + '"' : '') + '></label>';
   }
 
+  function pessoaHTML(k) {
+    var rot = k === 'importador' ? 'importador' : 'adquirente/encomendante';
+    return '<div class="row">' + fld('CNPJ/CPF do ' + rot, k + '.cnpj', { inputmode: 'numeric' }) +
+      '<button class="btn sm self" data-act="lookCnpj" data-who="' + k + '" type="button">Buscar CNPJ</button>' + fld('Nome / razão social', k + '.nome', { cls: 'w2' }) + '</div>' +
+      '<div class="msg" id="msg-' + k + '"></div>' +
+      '<div class="row">' + fld('CEP', k + '.cep', { inputmode: 'numeric' }) + '<button class="btn sm self" data-act="lookCep" data-who="' + k + '" type="button">Buscar CEP</button>' +
+      fld('Logradouro', k + '.logradouro', { cls: 'w2' }) + fld('Número', k + '.numero') + '</div>' +
+      '<div class="row">' + fld('Bairro', k + '.bairro') + fld('Município', k + '.cidade', { cls: 'w2' }) + fld('UF', k + '.uf') + '</div>';
+  }
+  function endereco(p) {
+    return [p.logradouro, p.numero, p.bairro, [p.cidade, p.uf].filter(Boolean).join('/'), p.cep].filter(Boolean).join(', ');
+  }
+  /* Consultas públicas externas: BrasilAPI (CNPJ) e ViaCEP (CEP). Só o CNPJ/CEP digitado sai do navegador. */
+  function extFetch(url, nome) {
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 20000);
+    return fetch(url, { signal: ctl.signal, headers: { 'Accept': 'application/json' } }).then(function (r) {
+      clearTimeout(t);
+      return r.text().then(function (txt) {
+        var j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) { /* não-JSON */ }
+        if (!r.ok) {
+          throw new Error(r.status === 404 ? nome + ' não encontrado.' : r.status === 429 ? 'Limite de consultas de ' + nome + ' atingido; aguarde alguns instantes.' :
+            r.status === 400 ? nome + ' em formato inválido.' : 'Consulta de ' + nome + ' falhou (HTTP ' + r.status + (j && j.message ? ' — ' + j.message : '') + ').');
+        }
+        return j;
+      });
+    }).catch(function (e) {
+      clearTimeout(t);
+      if (e.name === 'AbortError') throw new Error('A consulta de ' + nome + ' não respondeu em 20 s.');
+      if (e instanceof TypeError) throw new Error('Não foi possível consultar ' + nome + ' (sem rede ou bloqueio do navegador). Preencha manualmente.');
+      throw e;
+    });
+  }
+  function buscarCnpj(k) {
+    var cnpj = C.onlyDigits(S[k].cnpj), msg = $('#msg-' + k);
+    if (cnpj.length === 11) { msg.textContent = 'CPF: não há consulta pública de dados cadastrais; preencha manualmente.'; return; }
+    if (cnpj.length !== 14) { msg.textContent = 'Informe um CNPJ com 14 dígitos.'; return; }
+    if (!C.cnpjValido(cnpj)) { msg.textContent = 'CNPJ inválido (dígitos verificadores não conferem).'; return; }
+    msg.textContent = 'consultando BrasilAPI…';
+    extFetch('https://brasilapi.com.br/api/cnpj/v1/' + cnpj, 'CNPJ').then(function (j) {
+      var d = C.normalizarBrasilApiCnpj(j), p = S[k], extra = '';
+      p.cnpj = C.fmtCnpj(cnpj); p.nome = d.nome; p.cep = d.cep; p.logradouro = d.logradouro; p.numero = d.numero;
+      p.bairro = d.bairro; p.cidade = d.cidade; p.uf = d.uf; p.situacao = d.situacao;
+      if (k === 'importador' && !S.municipio && d.ibge && d.uf) {
+        S.uf = d.uf; S.municipio = d.ibge; S.municipioNome = d.cidade;
+        extra = ' UF e município do local de consumo foram sugeridos pelo endereço do importador; confirme.';
+      }
+      renderIdent(); atualizarErros(); salvarRascunho();
+      var m2 = $('#msg-' + k);
+      m2.textContent = 'Dados da Receita Federal via BrasilAPI. Situação cadastral: ' + (d.situacao || 'não informada') + '.' + extra;
+      if (d.situacao && !/^ativa$/i.test(d.situacao)) m2.className = 'msg bad';
+    }).catch(function (e) { msg.textContent = e.message; });
+  }
+  function buscarCep(who) {
+    var bruto = who === 'destino' ? S.destinoCep : S[who].cep, cep = C.cepLimpo(bruto), msg = $('#msg-' + who);
+    if (!cep) { msg.textContent = 'Informe um CEP com 8 dígitos.'; return; }
+    msg.textContent = 'consultando ViaCEP…';
+    extFetch('https://viacep.com.br/ws/' + cep + '/json/', 'CEP').then(function (j) {
+      var d = C.normalizarViaCep(j), aviso = '';
+      if (who === 'destino') {
+        S.destinoCep = d.cep; S.uf = d.uf; S.municipioNome = d.cidade;
+        if (d.ibge) S.municipio = d.ibge; else { S.municipio = ''; aviso = ' O ViaCEP não trouxe o código IBGE: selecione o município manualmente.'; }
+      } else {
+        var p = S[who]; p.cep = d.cep; p.logradouro = d.logradouro || p.logradouro; p.bairro = d.bairro || p.bairro; p.cidade = d.cidade; p.uf = d.uf;
+      }
+      renderIdent(); atualizarErros(); salvarRascunho();
+      $('#msg-' + who).textContent = d.cidade + '/' + d.uf + (d.ibge ? ' (IBGE ' + d.ibge + ')' : '') + '.' + aviso;
+    }).catch(function (e) { msg.textContent = e.message; });
+  }
+
   function renderIdent() {
     var d = S;
     $('#tab-ident').innerHTML =
@@ -580,12 +683,13 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       '<section class="card"><h3>Identificação</h3><div class="row">' +
       fld('Nº da DUIMP (se já registrada)', 'numeroDuimp', { ph: '26BR…' }) +
       fld('Data de registro (fato gerador)', 'dataRegistro', { type: 'date' }) +
-      '</div><div class="row">' + fld('CNPJ/CPF do importador', 'importador.cnpj', { inputmode: 'numeric' }) + fld('Nome / razão social', 'importador.nome', { cls: 'w2' }) + '</div>' +
+      '</div>' + pessoaHTML('importador') +
       '<div class="row"><label class="f w2"><span>Caracterização da importação</span><select data-b="caracterizacao">' + opts(CARACT, d.caracterizacao) + '</select></label></div>' +
-      '<div class="row" id="rowAdq"' + (d.caracterizacao === 'direta' ? ' hidden' : '') + '>' + fld('CNPJ/CPF do adquirente/encomendante', 'adquirente.cnpj', { inputmode: 'numeric' }) + fld('Nome do adquirente/encomendante', 'adquirente.nome', { cls: 'w2' }) + '</div>' +
+      '<div id="rowAdq"' + (d.caracterizacao === 'direta' ? ' hidden' : '') + '>' + pessoaHTML('adquirente') + '</div>' +
       '</section>' +
       '<section class="card"><h3>Local da operação de consumo (CBS/IBS)</h3>' +
-      '<p class="hint">Campos exigidos pelo Portal Único em Item &gt; Mercadoria para fins de CBS e IBS.</p><div class="row">' +
+      '<p class="hint">Campos exigidos pelo Portal Único em Item &gt; Mercadoria para fins de CBS e IBS.</p>' +
+      '<div class="row">' + fld('CEP do local de consumo (preenche UF e município)', 'destinoCep', { inputmode: 'numeric', cls: 'w2' }) + '<button class="btn sm self" data-act="lookCep" data-who="destino" type="button">Buscar CEP</button></div><div class="msg" id="msg-destino"></div><div class="row">' +
       '<label class="f"><span>UF</span><select id="uf" data-b="uf"><option value="">—</option></select></label>' +
       '<label class="f w2"><span>Município (código IBGE · nome)</span><input id="munInp" list="dl-mun" value="' + esc(d.municipio ? d.municipio + (d.municipioNome ? ' · ' + d.municipioNome : '') : '') + '" placeholder="digite para buscar"></label></div>' +
       '<div class="row"><button class="btn sm" id="btnAliq" type="button">Buscar alíquotas de referência</button><span class="hint" id="aliqMsg"></span></div>' +
@@ -692,8 +796,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
     }).join('');
     var t = RP ? RP.totais : null, totAdu = C.r2(der.reduce(function (a, x) { return a + x.valorAduaneiro; }, 0));
     return cab('Guia de conferência da DUIMP — CBS, IBS e IS', 'Documento auxiliar de conferência. Não é o Extrato da Duimp, não substitui o registro no Portal Único nem constitui guia de pagamento.') +
-      '<table class="kv"><tr><th>Importador</th><td>' + esc(S.importador.nome) + ' — ' + esc(S.importador.cnpj) + '</td><th>Nº da DUIMP</th><td>' + esc(S.numeroDuimp || '(não registrada)') + '</td></tr>' +
-      '<tr><th>Caracterização</th><td>' + esc(CARACT[S.caracterizacao]) + (S.caracterizacao !== 'direta' ? '<br>Adquirente/encomendante: ' + esc(S.adquirente.nome) + ' — ' + esc(S.adquirente.cnpj) : '') + '</td><th>Local da operação de consumo</th><td>' + esc(S.uf) + ' · ' + esc(S.municipioNome || '') + ' (' + esc(S.municipio) + ')</td></tr>' +
+      '<table class="kv"><tr><th>Importador</th><td>' + esc(S.importador.nome) + ' — ' + esc(S.importador.cnpj) + (endereco(S.importador) ? '<br>' + esc(endereco(S.importador)) : '') + '</td><th>Nº da DUIMP</th><td>' + esc(S.numeroDuimp || '(não registrada)') + '</td></tr>' +
+      '<tr><th>Caracterização</th><td>' + esc(CARACT[S.caracterizacao]) + (S.caracterizacao !== 'direta' ? '<br>Adquirente/encomendante: ' + esc(S.adquirente.nome) + ' — ' + esc(S.adquirente.cnpj) + (endereco(S.adquirente) ? '<br>' + esc(endereco(S.adquirente)) : '') : '') + '</td><th>Local da operação de consumo</th><td>' + esc(S.uf) + ' · ' + esc(S.municipioNome || '') + ' (' + esc(S.municipio) + ')</td></tr>' +
       '<tr><th>Modal / recinto</th><td>' + esc(MODAIS[S.modal] || '') + ' · ' + esc(S.recinto) + '</td><th>Moeda / câmbio</th><td>' + esc(S.moeda) + ' · ' + C.brl(C.num(S.cambio)) + '</td></tr></table>' +
       '<table><thead><tr><th>Item</th><th>NCM</th><th>Descrição</th><th class="r">Valor aduaneiro</th><th class="r">II</th><th>CST/cClassTrib</th><th class="r">Base CBS/IBS</th><th class="r">CBS</th><th class="r">IBS UF</th><th class="r">IBS Mun.</th><th class="r">IS</th></tr></thead><tbody>' + linhas + '</tbody>' +
       '<tfoot><tr><td colspan="3">Totais</td><td class="r">' + C.brl(totAdu) + '</td><td></td><td></td><td class="r">' + (t ? C.brl(t.vBC) : '—') + '</td><td class="r">' + (t ? C.brl(t.vCBS) : '—') + '</td><td class="r">' + (t ? C.brl(t.vIBSUF) : '—') + '</td><td class="r">' + (t ? C.brl(t.vIBSMun) : '—') + '</td><td class="r">' + (t ? C.brl(t.vIS) : '—') + '</td></tr></tfoot></table>' +
@@ -704,7 +808,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
   function guiaAnvisa() {
     var a = S.anvisa, sim = a.art23p6 === 'sim';
     return cab('Guia de Taxa Anvisa — dados para registro no PCCE', 'Ficha de atributos conforme o item 6.1 do Manual Anvisa (DUIMP, v. 1.10). A guia oficial é registrada no Portal Único (LPCO integrado ao PCCE).') +
-      '<table class="kv"><tr><th>CPF/CNPJ do importador</th><td>' + esc(S.importador.cnpj) + '</td><th>Nome / endereço</th><td>' + esc(S.importador.nome) + ' <em>(carregado automaticamente pelo Portal Único a partir dos dados da RFB)</em></td></tr>' +
+      '<table class="kv"><tr><th>CPF/CNPJ do importador</th><td>' + esc(S.importador.cnpj) + '</td><th>Nome / endereço</th><td>' + esc(S.importador.nome) + (endereco(S.importador) ? '<br>' + esc(endereco(S.importador)) : '') + ' <em>(carregado automaticamente pelo Portal Único a partir dos dados da RFB)</em></td></tr>' +
       '<tr><th>Categoria regulatória</th><td>' + esc(a.categoria) + '</td><th>Finalidade da importação</th><td>' + esc(a.finalidade) + '</td></tr>' +
       '<tr><th>Código de assunto — petição primária</th><td>' + esc(a.assuntoPrimario) + '</td><th>Código de assunto — petição secundária</th><td>' + esc(a.assuntoSecundario || '—') + '</td></tr>' +
       '<tr><th>CNPJ do detentor da regularização</th><td>' + esc(a.cnpjDetentor || '(em branco: produto não regularizado ou isento)') + '</td><th>CNPJ do recinto armazenador</th><td>' + esc(a.cnpjRecinto) + '</td></tr>' +
@@ -799,6 +903,12 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       if (t.dataset.b === 'dataRegistro' && ev.type === 'change') { carregarTabelas(); if (document.querySelector('#tab-calc.on')) renderCalculo(); }
       if (t.dataset.b === 'uf' && ev.type === 'change') { S.municipio = ''; S.municipioNome = ''; $('#munInp').value = ''; carregarMunicipios(v); }
       if (t.dataset.b === 'anvisa.ativo' || t.dataset.b === 'anvisa.art23p6') renderGuias();
+      if (ev.type === 'change') {
+        var b = t.dataset.b;
+        if ((b === 'importador.cnpj' || b === 'adquirente.cnpj') && C.cnpjValido(v)) buscarCnpj(b.split('.')[0]);
+        else if ((b === 'importador.cep' || b === 'adquirente.cep') && C.cepLimpo(v)) buscarCep(b.split('.')[0]);
+        else if (b === 'destinoCep' && C.cepLimpo(v)) buscarCep('destino');
+      }
       refreshDerivados(); atualizarErros(); salvarDeb(); return;
     }
     if (t.id === 'munInp') {
@@ -833,6 +943,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
       case 'dup': var c = JSON.parse(JSON.stringify(S.itens[i])); c.numero = S.itens.reduce(function (a, x) { return Math.max(a, parseInt(x.numero, 10) || 0); }, 0) + 1; S.itens.splice(i + 1, 0, c); openItem = i + 1; renderItens(); salvarRascunho(); atualizarErros(); break;
       case 'del': if (S.itens.length > 1) { S.itens.splice(i, 1); openItem = -1; renderItens(); salvarRascunho(); atualizarErros(); } else toast('A DUIMP precisa de ao menos um item.', 'err'); break;
       case 'ncm': verificarNcm(i); break;
+      case 'lookCnpj': buscarCnpj(t.dataset.who); break;
+      case 'lookCep': buscarCep(t.dataset.who); break;
       case 'btnCalc': calcular(); break;
       case 'btnPayload': case 'exPayload':
         var e = C.validar(S); if (e.length) { toast(e[0], 'err'); break; }
