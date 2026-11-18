@@ -1,0 +1,31 @@
+name: Sincronizar com a Receita Federal
+
+# Espelha diariamente a branch main do repositório oficial
+# (ReceitaFederal/calculadora-rtc-regime-regular) neste fork.
+# Regra: a main deste fork é espelho puro. Alterações próprias devem ficar em outro branch.
+on:
+  schedule:
+    - cron: '17 9 * * *'   # diariamente, 09:17 UTC (06:17 em Brasília)
+  workflow_dispatch:        # permite executar manualmente na aba Actions
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Mesclar upstream (somente avanço rápido)
+        run: |
+          git remote add upstream https://github.com/ReceitaFederal/calculadora-rtc-regime-regular.git
+          git fetch upstream main
+          if git merge --ff-only upstream/main; then
+            git push origin main
+          else
+            echo "::error::A main do fork divergiu da Receita Federal. Resolva manualmente (alterações próprias não devem ficar na main)."
+            exit 1
+          fi
