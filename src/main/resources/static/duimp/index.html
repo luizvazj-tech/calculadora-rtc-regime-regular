@@ -49,6 +49,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--mut);font-
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}.leg{display:flex;gap:14px;font-size:12px;color:var(--ink);margin:0 0 4px}
 .tip{position:fixed;z-index:30;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none;max-width:320px}.tip[hidden]{display:none}.tip b{display:block;margin-bottom:3px}
 label.btn input{display:none}
+#verChip{cursor:pointer;font:inherit;font-size:12px;background:var(--pri2);color:var(--pri);border-color:transparent}.ver{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 16px;margin-bottom:10px}.ver h3{margin:0;font-size:14px}.ver ul{margin:8px 0 0;padding-left:18px}.ver li{margin:4px 0}.tg{display:inline-block;font-size:11px;border-radius:99px;padding:1px 8px;margin-right:6px;background:var(--pri2);color:var(--pri)}.tg.c{background:var(--badbg);color:var(--bad)}.tg.m{background:var(--okbg);color:var(--ok)}
 #printArea{display:none}
 @media print{body.printing>*:not(#printArea){display:none!important}body.printing #printArea{display:block}body{background:#fff;color:#111}#printArea table{font-size:11px}@page{margin:14mm}}
 </style>
@@ -56,7 +57,7 @@ label.btn input{display:none}
 <body>
 <header class="top">
   <h1>DUIMP · Reforma Tributária<small>Preenchimento orientado, cálculo de CBS/IBS/IS pela API da Receita Federal, importação, exportação e guias</small></h1>
-  <div class="api"><span class="pill" id="apiStatus">API não consultada</span><input id="apiUrl" aria-label="Endereço da API" spellcheck="false"><button class="btn sm" id="btnApi" type="button">Conectar</button></div>
+  <div class="api"><button class="pill" id="verChip" type="button" data-act="verMelhorias" title="Histórico de melhorias"></button><span class="pill" id="apiStatus">API não consultada</span><input id="apiUrl" aria-label="Endereço da API" spellcheck="false"><button class="btn sm" id="btnApi" type="button">Conectar</button></div>
 </header>
 <main>
   <div class="erros" id="erros"></div>
@@ -69,6 +70,7 @@ label.btn input{display:none}
     <button class="tab" data-tab="hist" type="button">Histórico</button>
     <button class="tab" data-tab="dash" type="button">Dashboard</button>
     <button class="tab" data-tab="io" type="button">Importar / Exportar</button>
+    <button class="tab" data-tab="mel" type="button" id="tabMel">Melhorias</button>
   </nav>
   <div class="hint" id="refStatus">tabelas oficiais não carregadas</div>
   <section class="pane on" id="tab-ident"></section>
@@ -79,8 +81,9 @@ label.btn input{display:none}
   <section class="pane" id="tab-hist"></section>
   <section class="pane" id="tab-dash"></section>
   <section class="pane" id="tab-io"></section>
+  <section class="pane" id="tab-mel"></section>
 </main>
-<footer>Ferramenta auxiliar. Não registra a DUIMP no Portal Único Siscomex nem emite guia de pagamento. Os campos seguem a estrutura de preenchimento descrita pela Receita Federal e pelo Manual Anvisa, mas não reproduzem o leiaute oficial da Duimp (Ato Técnico Conjunto RFB/Suana/CGIBS nº 11). Confirme valores e regras na fonte oficial antes de uso profissional.</footer>
+<footer><span id="rodapeVersao"></span> Ferramenta auxiliar. Não registra a DUIMP no Portal Único Siscomex nem emite guia de pagamento. Os campos seguem a estrutura de preenchimento descrita pela Receita Federal e pelo Manual Anvisa, mas não reproduzem o leiaute oficial da Duimp (Ato Técnico Conjunto RFB/Suana/CGIBS nº 11). Confirme valores e regras na fonte oficial antes de uso profissional.</footer>
 <datalist id="dl-cst"></datalist><datalist id="dl-cc"></datalist><datalist id="dl-cst-is"></datalist><datalist id="dl-cc-is"></datalist><datalist id="dl-fund"></datalist><datalist id="dl-mun"></datalist>
 <div id="printArea"></div>
 <div class="tip" id="tip" hidden></div>
@@ -462,8 +465,8 @@ label.btn input{display:none}
   }
 
   /* ---------- importação / exportação ---------- */
-  function exportar(d) {
-    return { formato: FORMATO, versaoFormato: VERSAO_FORMATO, geradoEm: new Date().toISOString(), duimp: JSON.parse(JSON.stringify(d)) };
+  function exportar(d, versaoFerramenta) {
+    return { formato: FORMATO, versaoFormato: VERSAO_FORMATO, geradoEm: new Date().toISOString(), versaoFerramenta: versaoFerramenta || '', duimp: JSON.parse(JSON.stringify(d)) };
   }
   function mesclar(base, ext) {
     Object.keys(ext || {}).forEach(function (k) {
@@ -614,6 +617,54 @@ label.btn input{display:none}
       linhas.push([fmtDataHora(e.em), e.tipo, e.campo, e.item === null ? '' : e.item, e.de, e.para, e.por].map(csvEsc).join(';'));
     });
     return linhas.join('\r\n');
+  }
+
+
+  /* ---------- histórico de melhorias (versões) ---------- */
+  var TIPOS_VERSAO = { novo: 'Novo', melhoria: 'Melhoria', 'correção': 'Correção' };
+  function partesVersao(v) { var p = String(v).split('.').map(function (x) { return parseInt(x, 10); }); return [p[0] || 0, p[1] || 0, p[2] || 0]; }
+  function cmpVersao(a, b) {
+    var x = partesVersao(a), y = partesVersao(b);
+    for (var i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
+    return 0;
+  }
+  /* Confere o cadastro: formato, ordem decrescente, datas, tipos e coerência de "atual". Devolve a lista de problemas. */
+  function validarVersoes(V) {
+    var er = [], ant = null;
+    if (!V || !Array.isArray(V.lista) || !V.lista.length) return ['cadastro de versões vazio'];
+    V.lista.forEach(function (v) {
+      if (!/^\d+\.\d+\.\d+$/.test(v.versao)) er.push('versão inválida: ' + v.versao);
+      if (isNaN(new Date(v.data))) er.push('data inválida em ' + v.versao);
+      if (!v.titulo) er.push('sem título em ' + v.versao);
+      if (!v.itens || !v.itens.length) er.push('sem itens em ' + v.versao);
+      (v.itens || []).forEach(function (it) { if (!TIPOS_VERSAO[it[0]] || !it[1]) er.push('item inválido em ' + v.versao); });
+      if (ant) {
+        if (cmpVersao(ant.versao, v.versao) <= 0) er.push('versões fora de ordem: ' + ant.versao + ' antes de ' + v.versao);
+        if (new Date(ant.data) < new Date(v.data)) er.push('data de ' + ant.versao + ' anterior à de ' + v.versao);
+        var a = partesVersao(ant.versao), b = partesVersao(v.versao);
+        if (a[0] === b[0] && a[1] === b[1] + 1 && a[2] !== 0) er.push(ant.versao + ' deveria zerar o PATCH ao subir o MINOR');
+      }
+      ant = v;
+    });
+    if (V.atual !== V.lista[0].versao) er.push('“atual” (' + V.atual + ') difere da versão mais recente da lista (' + V.lista[0].versao + ')');
+    return er;
+  }
+  function filtrarVersoes(lista, f) {
+    f = f || {}; var q = semAcento(f.q || '');
+    return lista.map(function (v) {
+      var itens = v.itens.filter(function (it) { return (!f.tipo || it[0] === f.tipo) && (!q || semAcento(it[1] + ' ' + v.titulo + ' ' + v.versao).indexOf(q) >= 0); });
+      return Object.assign({}, v, { itens: itens });
+    }).filter(function (v) { return v.itens.length; });
+  }
+  function versoesParaMarkdown(V) {
+    var out = ['# Histórico de melhorias — Ferramenta DUIMP · Reforma Tributária', '',
+      'Versão atual: **' + V.atual + '**. Numeração: MINOR = função nova; PATCH = melhoria ou correção de função existente; MAJOR = mudança que quebra a compatibilidade dos arquivos exportados.', ''];
+    V.lista.forEach(function (v) {
+      out.push('## ' + v.versao + ' — ' + v.titulo + ' (' + fmtDataHora(v.data) + (v.commit ? ', commit ' + v.commit : '') + ')', '');
+      v.itens.forEach(function (it) { out.push('- **' + TIPOS_VERSAO[it[0]] + ':** ' + it[1]); });
+      out.push('');
+    });
+    return out.join('\n');
   }
 
   /* ---------- histórico de guias, busca e dashboard ---------- */
@@ -772,6 +823,7 @@ label.btn input{display:none}
     STATUS: STATUS, STATUS_ROTULO: STATUS_ROTULO, mesRotulo: mesRotulo, semAcento: semAcento, gerarCnpj: gerarCnpj, resultadoDe: resultadoDe, resumoDe: resumoDe,
     LABELS: LABELS, rotuloCampo: rotuloCampo, diffAlteracoes: diffAlteracoes, registrarAlteracoes: registrarAlteracoes, registrarEvento: registrarEvento, mesclarLog: mesclarLog,
     fmtDataHora: fmtDataHora, contarLog: contarLog, filtrarLog: filtrarLog, logParaCSV: logParaCSV,
+    TIPOS_VERSAO: TIPOS_VERSAO, cmpVersao: cmpVersao, validarVersoes: validarVersoes, filtrarVersoes: filtrarVersoes, versoesParaMarkdown: versoesParaMarkdown,
     novoRegistro: novoRegistro, atualizarRegistro: atualizarRegistro, buscarHistorico: buscarHistorico, ordenarHistorico: ordenarHistorico, dashboard: dashboard,
     historicoParaCSV: historicoParaCSV, exportarHistorico: exportarHistorico, importarHistorico: importarHistorico,
     validar: validar, pendencias: pendencias, exemploDuimp: exemploDuimp, lerResposta: lerResposta, itensParaCSV: itensParaCSV, csvParaItens: csvParaItens,
@@ -780,6 +832,57 @@ label.btn input{display:none}
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.DuimpCore;
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
+
+</script>
+<script>
+/* Histórico de melhorias da ferramenta — fonte única da versão exibida na tela, no CHANGELOG.md e nos arquivos exportados.
+   Regra de numeração (MAJOR.MINOR.PATCH):
+   • MINOR (0.X.0): função nova;
+   • PATCH (0.0.X): melhoria ou correção de função já existente;
+   • MAJOR (X.0.0): mudança que altera o formato dos arquivos exportados ou quebra a compatibilidade.
+   A cada melhoria: acrescentar a versão NO TOPO da lista, atualizar "atual" e rodar o build (o teste confere a ordem). */
+(function (root) {
+  'use strict';
+  var V = {
+    atual: '0.7.0',
+    lista: [
+      { versao: '0.7.0', data: '2026-11-18T11:32:00-03:00', commit: '', titulo: 'Histórico de melhorias e versão visível', itens: [
+        ['novo', 'Aba “Melhorias” com a linha do tempo de versões (data, hora, tipo e descrição de cada mudança), filtro por tipo e busca.'],
+        ['novo', 'Versão da ferramenta no cabeçalho, no rodapé e na guia de conferência impressa; aviso de novidades quando há versão que você ainda não viu.'],
+        ['novo', 'Arquivo CHANGELOG.md gerado a partir do mesmo cadastro de versões, publicado junto da ferramenta.'],
+        ['melhoria', 'O JSON exportado e o evento de cálculo no registro de correções passam a informar a versão da ferramenta usada.'] ] },
+      { versao: '0.6.0', data: '2026-11-18T11:23:08-03:00', commit: 'ff7a9d2', titulo: 'Registro de correções', itens: [
+        ['novo', 'Aba “Correções”: cada alteração confirmada fica registrada com data e hora (Brasília), campo, item, valor anterior, novo valor e origem.'],
+        ['novo', 'Eventos do processo no registro: item adicionado/duplicado/removido, importações, cálculo pela API, guia emitida, envio registrado ou desfeito.'],
+        ['novo', 'Anotação livre do motivo da correção, filtro por tipo, busca e exportação em CSV.'],
+        ['melhoria', 'Atalho “correções” em cada linha do histórico, indicador no dashboard e anexo com as últimas 25 correções na guia de conferência.'],
+        ['melhoria', 'Dez guias de exemplo passam a trazer correções e eventos de exemplo.'] ] },
+      { versao: '0.5.0', data: '2026-11-18T11:13:23-03:00', commit: '8185404', titulo: 'Valores e percentuais no padrão brasileiro', itens: [
+        ['melhoria', 'Valores monetários como R$ 1.111,11 e percentuais como 11,11% em campos, tabelas, guias, gráficos e dashboard.'],
+        ['melhoria', 'Campos reformatam ao sair e aceitam “1.111,11”, “R$ 1.111,11”, “11,11%” e “USD 2.000,00”; valores em moeda estrangeira exibem o código da moeda.'],
+        ['correção', '“1.111” sem vírgula passa a ser lido como mil cento e onze, e não como 1,111.'] ] },
+      { versao: '0.4.0', data: '2026-11-18T10:53:38-03:00', commit: '70515aa', titulo: 'Histórico de guias, busca e dashboard', itens: [
+        ['novo', 'Histórico de guias com situações Rascunho, Calculada, Guia emitida e Enviada (marcação manual com protocolo e data).'],
+        ['novo', 'Busca sem acento (importador, CNPJ, nº da DUIMP, NCM, descrição, município, protocolo) e filtros por situação, UF, período e valor.'],
+        ['novo', 'Dashboard de movimentação: indicadores, valor por mês, CBS e IBS por mês, situação, UF, NCMs e importadores, com tooltip, tabela e modo escuro.'],
+        ['novo', 'Dez guias de exemplo com dados fictícios e cálculo ilustrativo, e exportação/importação do histórico (JSON e CSV).'] ] },
+      { versao: '0.3.0', data: '2026-11-18T10:37:49-03:00', commit: 'b646fba', titulo: 'Pendências clicáveis e uso sem depender da API', itens: [
+        ['correção', 'As pendências de preenchimento passaram a aparecer em destaque neutro e cada uma leva direto à aba, ao item e ao campo.'],
+        ['correção', 'UF e município continuam preenchíveis quando a API está dormindo (lista padrão de UFs; município por nome ou código IBGE).'],
+        ['novo', 'Botão para carregar uma DUIMP de exemplo fictícia e marcação dos campos inválidos ao calcular.'] ] },
+      { versao: '0.2.0', data: '2026-11-18T10:26:37-03:00', commit: 'b8a25aa', titulo: 'Consulta de CNPJ e CEP', itens: [
+        ['novo', 'Consulta de CNPJ na BrasilAPI: razão social, endereço e situação cadastral do importador e do adquirente.'],
+        ['novo', 'Consulta de CEP no ViaCEP: define UF e município (IBGE) do local da operação de consumo.'],
+        ['melhoria', 'UF e município do local de consumo sugeridos pelo endereço do importador.'] ] },
+      { versao: '0.1.0', data: '2026-11-18T10:20:34-03:00', commit: '3a2239b', titulo: 'Versão inicial', itens: [
+        ['novo', 'Identificação da DUIMP, itens com NCM, valores e tributos da base, CST/cClassTrib pelo fundamento legal, Imposto Seletivo e tributação regular.'],
+        ['novo', 'Cálculo de CBS, IBS e IS pela API da Receita Federal, com memória de cálculo.'],
+        ['novo', 'Importação e exportação (JSON, CSV de itens e payload da API) e rascunho automático no navegador.'],
+        ['novo', 'Guia de conferência e ficha da guia de taxa Anvisa para impressão ou PDF; publicação na mesma origem da API (Render).'] ] }
+    ]
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = V; else root.DuimpVersoes = V;
+})(typeof window !== 'undefined' ? window : this);
 
 </script>
 <script>
@@ -1196,7 +1299,7 @@ label.btn input{display:none}
   /* ---------- guias ---------- */
   function cab(titulo, sub) {
     return '<header class="gh"><div><h2>' + esc(titulo) + '</h2><p>' + esc(sub) + '</p></div><div class="gm">Gerado em ' + new Date().toLocaleString('pt-BR') + '<br>Data de registro: ' + esc(String(S.dataRegistro).split('-').reverse().join('/')) +
-      (VERSAO_API && VERSAO_API.versaoAplicacao ? '<br>API v' + esc(VERSAO_API.versaoAplicacao) : '') + '</div></header>';
+      (VERSAO_API && VERSAO_API.versaoAplicacao ? '<br>API v' + esc(VERSAO_API.versaoAplicacao) : '') + '<br>Ferramenta DUIMP-RTC v' + esc(VER.atual) + '</div></header>';
   }
   function guiaConferencia() {
     var der = C.derivados(S), l = RP ? RP.linhas : [];
@@ -1296,7 +1399,7 @@ label.btn input{display:none}
       .then(function (r) {
         R = r.body; RP = C.lerResposta(R); RW = r.headers.get('x-warning-dados-simulados');
         SNAP = chave(); renderCalculo(); renderGuias();
-        evento('Cálculo CBS/IBS/IS realizado pela API' + (VERSAO_API && VERSAO_API.versaoAplicacao ? ' (v' + VERSAO_API.versaoAplicacao + ')' : '') + (RW ? ' — dados simulados sinalizados pela API' : ''));
+        evento('Cálculo CBS/IBS/IS realizado pela API' + (VERSAO_API && VERSAO_API.versaoAplicacao ? ' (v' + VERSAO_API.versaoAplicacao + ')' : '') + (RW ? ' — dados simulados sinalizados pela API' : '') + ' · ferramenta v' + VER.atual);
         var rg = salvarNoHistorico('calculada'); toast('Cálculo concluído e guia salva no histórico (' + rotuloStatus(rg.status).toLowerCase() + ').');
       }).catch(function (e) {
         renderCalculo(); $('#calcMsg').textContent = ''; toast(e.message, 'err');
@@ -1332,6 +1435,7 @@ label.btn input{display:none}
   }
   function onInputCore(ev) {
     var t = ev.target;
+    if (t.id && t.id.indexOf('mf-') === 0) { if (t.id === 'mf-q') MF.q = t.value; else MF.tipo = t.value; renderMelLista(); return; }
     if (t.id && t.id.indexOf('lf-') === 0) { if (t.id === 'lf-q') LF.q = t.value; else LF.tipo = t.value; renderLogLista(); return; }
     if (t.id === 'logNota') return;
     if (t.id && t.id.indexOf('hf-') === 0) { filtrosHist(t); return; }
@@ -1391,6 +1495,8 @@ label.btn input{display:none}
     if (t.dataset.print) return imprimir(t.dataset.print);
     if (t.dataset.goto !== undefined) return irPara(PEND[parseInt(t.dataset.goto, 10)]);
     if (t.dataset.act === 'logNotaAdd') { var tx = ($('#logNota').value || '').trim(); if (!tx) { toast('Escreva a anotação.', 'err'); return; } auditar(); evento(tx, 'nota'); salvarRascunho(); renderLog(); return; }
+    if (t.dataset.act === 'verMelhorias') { trocarAba('mel'); return; }
+    if (t.dataset.act === 'melMd') { download('CHANGELOG.md', C.versoesParaMarkdown(VER), 'text/markdown;charset=utf-8'); return; }
     if (t.dataset.act === 'logCsv') { download('correcoes-duimp.csv', '\ufeff' + C.logParaCSV(S.log), 'text/csv;charset=utf-8'); return; }
     if (/^h[A-Z]/.test(t.dataset.act || '')) return acaoHist(t.dataset.act, t);
     var i = parseInt(t.dataset.i, 10);
@@ -1407,7 +1513,7 @@ label.btn input{display:none}
         var e = C.validar(S); if (e.length) { toast(e[0], 'err'); break; }
         download('payload-calculadora-rtc.json', JSON.stringify(C.montarPayload(S), null, 2)); break;
       case 'btnAliq': buscarAliquotas(); break;
-      case 'exJson': download('duimp-' + (S.numeroDuimp || 'rascunho') + '.json', JSON.stringify(C.exportar(S), null, 2)); break;
+      case 'exJson': download('duimp-' + (S.numeroDuimp || 'rascunho') + '.json', JSON.stringify(C.exportar(S, VER.atual), null, 2)); break;
       case 'exCsv': download('duimp-itens.csv', '﻿' + C.itensParaCSV(S.itens), 'text/csv;charset=utf-8'); break;
       case 'btnNova': S = C.novaDuimp(); R = RP = RW = PAYLOAD = null; SNAP = ''; salvarRascunho(); renderAll(); montarListas(); toast('DUIMP limpa.'); break;
     }
@@ -1433,9 +1539,38 @@ label.btn input{display:none}
   function trocarAba(nome) {
     $$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === nome); });
     $$('.pane').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + nome); });
-    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo(); if (nome === 'log') renderLog(); if (nome === 'hist') renderHist(); if (nome === 'dash') renderDash();
+    if (nome === 'guias') renderGuias(); if (nome === 'calc') renderCalculo(); if (nome === 'mel') { renderMelhorias(); marcarVista(); atualizarVersaoUI(); } if (nome === 'log') renderLog(); if (nome === 'hist') renderHist(); if (nome === 'dash') renderDash();
   }
 
+
+
+  /* ---------- histórico de melhorias ---------- */
+  var VER = window.DuimpVersoes, LS_VER = 'duimp-rtc:versaoVista', MF = { q: '', tipo: '' };
+  function versaoVista() { try { return localStorage.getItem(LS_VER) || ''; } catch (e) { return ''; } }
+  function marcarVista() { try { localStorage.setItem(LS_VER, VER.atual); } catch (e) { /* sem storage */ } }
+  function atualizarVersaoUI() {
+    var nova = versaoVista() !== VER.atual, dt = C.fmtDataHora(VER.lista[0].data);
+    $('#verChip').textContent = 'v' + VER.atual + (nova ? ' · novidades' : '');
+    $('#tabMel').textContent = 'Melhorias' + (nova ? ' ●' : '');
+    $('#rodapeVersao').textContent = 'Versão ' + VER.atual + ' (' + dt + ').';
+  }
+  function renderMelhorias() {
+    var lista = C.filtrarVersoes(VER.lista, MF), tot = VER.lista.reduce(function (a, v) { return a + v.itens.length; }, 0);
+    var h = '<p class="hint">Versão atual: <b>v' + esc(VER.atual) + '</b> · ' + VER.lista.length + ' versões e ' + tot + ' mudanças registradas. A cada função nova sobe o segundo número (0.X.0); a cada melhoria ou correção de função existente, o terceiro (0.0.X); mudança que quebre a compatibilidade dos arquivos exportados sobe o primeiro. O mesmo cadastro gera o arquivo CHANGELOG.md publicado junto da ferramenta.</p>' +
+      '<div class="row"><label class="f w2"><span>Buscar nas melhorias</span><input id="mf-q" value="' + esc(MF.q) + '" autocomplete="off"></label>' +
+      '<label class="f"><span>Tipo</span><select id="mf-tipo"><option value="">Todos</option>' + selOpts([['novo', 'Novo'], ['melhoria', 'Melhoria'], ['correção', 'Correção']], MF.tipo) + '</select></label>' +
+      '<button class="btn sm self" data-act="melMd" type="button">Baixar CHANGELOG.md</button></div><div id="melLista"></div>';
+    $('#tab-mel').innerHTML = h; renderMelLista();
+  }
+  function renderMelLista() {
+    var el = $('#melLista'); if (!el) return;
+    var lista = C.filtrarVersoes(VER.lista, MF);
+    el.innerHTML = lista.length ? lista.map(function (v, i) {
+      return '<div class="ver"><h3>v' + esc(v.versao) + ' — ' + esc(v.titulo) + (v.versao === VER.atual ? ' <span class="pill ok">atual</span>' : '') + '</h3>' +
+        '<div class="hint">' + esc(C.fmtDataHora(v.data)) + (v.commit ? ' · commit ' + esc(v.commit) : '') + '</div><ul>' +
+        v.itens.map(function (it) { return '<li><span class="tg ' + (it[0] === 'correção' ? 'c' : it[0] === 'melhoria' ? 'm' : '') + '">' + esc(C.TIPOS_VERSAO[it[0]]) + '</span>' + esc(it[1]) + '</li>'; }).join('') + '</ul></div>';
+    }).join('') : '<div class="aviso">Nada encontrado com esses filtros.</div>';
+  }
 
   /* ---------- registro de correções (trilha de auditoria) ---------- */
   var LAST = null, LF = { q: '', tipo: '' };
@@ -1731,6 +1866,7 @@ label.btn input{display:none}
     var salvo = null; try { salvo = localStorage.getItem(LS_API); } catch (e) { /* sem storage */ }
     $('#apiUrl').value = location.pathname.indexOf('/api/') === 0 ? location.origin + '/api' : (salvo || RENDER_URL);
     H = lerHist();
+    atualizarVersaoUI();
     renderAll();
     document.addEventListener('mousemove', mostrarTip);
     document.addEventListener('input', onInput); document.addEventListener('change', onInput);
